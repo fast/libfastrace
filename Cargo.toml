@@ -1,8 +1,25 @@
-[package]
-name = "minitrace-c"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+resolver = "2"
+members = [
+    "minitrace",
+]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[profile.dev]
+opt-level = 0
+debug = 0
+codegen-units = 4
+lto = false
+incremental = true
+debug-assertions = true
+overflow-checks = false
+rpath = false
 
-[dependencies]
+[profile.release]
+opt-level = 3
+debug = true
+codegen-units = 1
+lto = true
+incremental = false
+debug-assertions = false
+overflow-checks = false
+rpath = false
