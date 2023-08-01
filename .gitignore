@@ -1,2 +1,5 @@
 /target
 /Cargo.lock
+*.o
+/minitrace/examples/get_started
+/minitrace/examples/synchronous
