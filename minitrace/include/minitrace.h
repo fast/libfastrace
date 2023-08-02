@@ -22,6 +22,8 @@ typedef struct mtr_loc_span mtr_loc_span;
 
 typedef struct mtr_loc_spans mtr_loc_spans;
 
+typedef struct mtr_otel_rptr mtr_otel_rptr;
+
 typedef struct mtr_span mtr_span;
 
 typedef struct mtr_span_ctx mtr_span_ctx;
@@ -68,9 +70,15 @@ mtr_cons_rptr *mtr_create_cons_rptr(void);
 
 void mtr_free_cons_rptr(mtr_cons_rptr *r);
 
-void mtr_set_rptr(mtr_cons_rptr *rptr, mtr_coll_cfg *cfg);
+void mtr_set_cons_rptr(mtr_cons_rptr *rptr, mtr_coll_cfg *cfg);
+
+void mtr_set_otel_rptr(mtr_otel_rptr *rptr, mtr_coll_cfg *cfg);
 
 void mtr_flush(void);
+
+mtr_otel_rptr *mtr_create_otel_rptr(void);
+
+void mtr_free_otel_rptr(mtr_otel_rptr *r);
 
 mtr_loc_coll *mtr_start_loc_coll(void);
 

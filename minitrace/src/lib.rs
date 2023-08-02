@@ -7,7 +7,7 @@
 // unreable_pub warns `#[no_mangle] pub extern fn` in private mod.
 #![allow(unreachable_pub)]
 
-//! # mimitrace C API
+//! # minitrace C API
 
 #[macro_use]
 mod macros;

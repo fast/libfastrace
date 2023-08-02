@@ -5,6 +5,7 @@ use minitrace::{collector::Config, prelude::SpanContext};
 
 pub(crate) mod console_reporter;
 pub(crate) mod global_collector;
+pub(crate) mod opentelemetry_reporter;
 
 pub struct mtr_span_ctx {
     pub(crate) inner: SpanContext,

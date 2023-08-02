@@ -6,7 +6,7 @@ int main(void)
 {
 	mtr_coll_cfg *cfg = mtr_create_glob_coll_def_cfg();
 	mtr_cons_rptr *rptr = mtr_create_cons_rptr();
-	mtr_set_rptr(rptr, cfg);
+	mtr_set_cons_rptr(rptr, cfg);
 	mtr_span_ctx *p = mtr_create_rand_span_ctx();
 	mtr_span *r = mtr_create_root_span("root", p);
 	mtr_guard *g = mtr_set_loc_parent_to_span(r);
