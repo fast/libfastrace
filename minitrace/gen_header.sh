@@ -4,7 +4,7 @@
 set -e
 
 CAPI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-header_file_backup="$CAPI_DIR/include/minitrace.h.backup"
+header_file_backup="$CAPI_DIR/include/minitrace_c.h.backup"
 
 function cleanup {
     rm -rf "$WORK_DIR" || true
@@ -21,7 +21,7 @@ if [[ ! "$WORK_DIR" || ! -d "$WORK_DIR" ]]; then
     exit 1
 fi
 
-cp "$CAPI_DIR/include/minitrace.h" "$header_file_backup"
+cp "$CAPI_DIR/include/minitrace_c.h" "$header_file_backup"
 
 if ! cargo expand 2>$WORK_DIR/expand_stderr.err >$WORK_DIR/expanded.rs; then
     cat $WORK_DIR/expand_stderr.err
@@ -31,7 +31,7 @@ fi
 if ! cbindgen \
     --config "$CAPI_DIR/cbindgen.toml" \
     --lockfile "$CAPI_DIR/Cargo.lock" \
-    --output "$CAPI_DIR/include/minitrace.h" \
+    --output "$CAPI_DIR/include/minitrace_c.h" \
     "${@}" \
     $WORK_DIR/expanded.rs 2>$WORK_DIR/cbindgen_stderr.err; then
     bindgen_exit_code=$?

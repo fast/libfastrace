@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "minitrace.h"
+#include "minitrace_c.h"
 
 int main(void)
 {

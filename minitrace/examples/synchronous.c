@@ -1,6 +1,6 @@
 #include <unistd.h>
 
-#include "minitrace.h"
+#include "minitrace_c.h"
 
 void func2(int i)
 {
