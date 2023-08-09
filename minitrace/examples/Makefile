@@ -1,6 +1,7 @@
 APPS = \
 	get_started \
 	synchronous \
+	asynchronous \
 	#
 
 .PHONY: all
