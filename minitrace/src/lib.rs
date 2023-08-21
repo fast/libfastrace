@@ -1,28 +1,37 @@
 // Copyright 2023 Wenbo Zhang. Licensed under Apache-2.0.
 
-// We have a lot of c-types in here, stop warning about their names!
-#![allow(non_camel_case_types)]
-// fmt::Debug isn't helpful on FFI types
-#![allow(missing_debug_implementations)]
-// unreable_pub warns `#[no_mangle] pub extern fn` in private mod.
-#![allow(unreachable_pub)]
+use minitrace::prelude::Span;
+use std::mem::transmute;
 
-//! # minitrace C API
+use self::ffi::*;
 
-#[macro_use]
-mod macros;
+#[cxx::bridge]
+mod ffi {
+    struct mtr_span_ctx {
+        _padding: [u8; 24],
+    }
 
-pub mod collector;
-mod local;
-mod span;
+    struct mtr_span {
+        _padding: [u8; 128],
+    }
 
-pub use self::local::*;
+    extern "Rust" {
+        fn mtr_create_root_span(name: &'static str, parent: mtr_span_ctx) -> mtr_span;
 
-/// cbindgen:ignore
-static VERSION_CSTR: &str = concat!(env!("CARGO_PKG_VERSION"), "\0");
+        fn mtr_create_child_span_enter(name: &'static str, parent: &mtr_span) -> mtr_span;
 
-ffi_fn! {
-    fn mtr_c_ver() -> *const libc::c_char {
-        VERSION_CSTR.as_ptr() as _
-    } ?= std::ptr::null()
+        fn mtr_create_child_span_enter_loc(name: &'static str) -> mtr_span;
+    }
+}
+
+fn mtr_create_root_span(name: &'static str, parent: mtr_span_ctx) -> mtr_span {
+    unsafe { transmute(Span::root(name, transmute(parent))) }
+}
+
+fn mtr_create_child_span_enter(name: &'static str, parent: &mtr_span) -> mtr_span {
+    unsafe { transmute(Span::enter_with_parent(name, transmute(parent))) }
+}
+
+fn mtr_create_child_span_enter_loc(name: &'static str) -> mtr_span {
+    unsafe { transmute(Span::enter_with_local_parent(name)) }
 }
