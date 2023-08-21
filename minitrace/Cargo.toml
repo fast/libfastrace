@@ -12,7 +12,7 @@ crate-type = ["cdylib", "staticlib"]
 [dependencies]
 cxx = "1.0.106"
 libc = "0.2"
-minitrace = { version = "0.5", features = ["enable"] }
-minitrace-opentelemetry = "0.5"
+minitrace = { version = "0.5.1", features = ["enable"] }
+minitrace-opentelemetry = "0.5.1"
 opentelemetry = { version = "0.19", features = ["trace"] }
 opentelemetry-otlp = { version = "0.12", features = ["trace", "grpc-sys"] }
