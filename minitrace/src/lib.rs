@@ -1,6 +1,9 @@
 // Copyright 2023 Wenbo Zhang. Licensed under Apache-2.0.
 
-use minitrace::prelude::{LocalSpan, Span};
+use minitrace::{
+    local::LocalCollector,
+    prelude::{LocalSpan, Span},
+};
 use std::mem::transmute;
 
 use self::ffi::*;
@@ -27,6 +30,10 @@ mod ffi {
         _padding: [u8; 8],
     }
 
+    struct mtr_loc_coll {
+        _padding: [u8; 16],
+    }
+
     extern "Rust" {
         fn mtr_create_root_span(name: &'static str, parent: mtr_span_ctx) -> mtr_span;
 
@@ -39,6 +46,10 @@ mod ffi {
         fn mtr_push_child_spans_to_cur(span: &mtr_span, local_span: mtr_loc_spans);
 
         fn mtr_create_loc_span_enter(name: &'static str) -> mtr_loc_span;
+
+        fn mtr_start_loc_coll() -> mtr_loc_coll;
+
+        fn mtr_collect_loc_spans(lc: mtr_loc_coll) -> mtr_loc_spans;
     }
 }
 
@@ -64,4 +75,12 @@ fn mtr_push_child_spans_to_cur(span: &mtr_span, local_span: mtr_loc_spans) {
 
 fn mtr_create_loc_span_enter(name: &'static str) -> mtr_loc_span {
     unsafe { transmute(LocalSpan::enter_with_local_parent(name)) }
+}
+
+fn mtr_start_loc_coll() -> mtr_loc_coll {
+    unsafe { transmute(LocalCollector::start()) }
+}
+
+fn mtr_collect_loc_spans(lc: mtr_loc_coll) -> mtr_loc_spans {
+    unsafe { transmute(transmute::<mtr_loc_coll, LocalCollector>(lc).collect()) }
 }
