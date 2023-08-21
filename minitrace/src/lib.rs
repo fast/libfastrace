@@ -39,6 +39,18 @@ mod ffi {
         _padding: [u8; 48],
     }
 
+    struct mtr_otel_rptr {
+        _padding: [u8; 192],
+    }
+
+    struct mtr_otlp_exp_cfg {
+        _padding: [u8; 48],
+    }
+
+    struct mtr_otlp_grpcio_cfg {
+        _padding: [u8; 112],
+    }
+
     extern "Rust" {
         fn mtr_create_root_span(name: &'static str, parent: mtr_span_ctx) -> mtr_span;
 
@@ -56,6 +68,7 @@ mod ffi {
 
         fn mtr_collect_loc_spans(lc: mtr_loc_coll) -> mtr_loc_spans;
 
+        fn mtr_create_def_coll_cfg() -> mtr_coll_cfg;
         fn mtr_set_max_spans_per_trace(cfg: mtr_coll_cfg, mspt: usize) -> mtr_coll_cfg;
 
         fn mtr_set_batch_report_interval(cfg: mtr_coll_cfg, bri: u64) -> mtr_coll_cfg;
@@ -63,6 +76,12 @@ mod ffi {
         fn mtr_set_report_max_spans(cfg: mtr_coll_cfg, brms: usize) -> mtr_coll_cfg;
 
         fn mtr_set_cons_rptr();
+
+        fn mtr_create_def_otlp_exp_cfg() -> mtr_otlp_exp_cfg;
+
+        fn mtr_create_def_otlp_grpcio_cfg() -> mtr_otlp_grpcio_cfg;
+
+        fn mtr_create_otel_rptr(cfg: mtr_otlp_exp_cfg, gcfg: mtr_otlp_grpcio_cfg) -> mtr_otel_rptr;
 
         fn mtr_flush();
     }
@@ -100,6 +119,10 @@ fn mtr_collect_loc_spans(lc: mtr_loc_coll) -> mtr_loc_spans {
     unsafe { transmute(transmute::<mtr_loc_coll, LocalCollector>(lc).collect()) }
 }
 
+fn mtr_create_def_coll_cfg() -> mtr_coll_cfg {
+    unsafe { transmute(Config::default()) }
+}
+
 fn mtr_set_max_spans_per_trace(cfg: mtr_coll_cfg, mspt: usize) -> mtr_coll_cfg {
     unsafe { transmute(transmute::<mtr_coll_cfg, Config>(cfg).max_spans_per_trace(Some(mspt))) }
 }
@@ -119,6 +142,43 @@ fn mtr_set_report_max_spans(cfg: mtr_coll_cfg, brms: usize) -> mtr_coll_cfg {
 
 fn mtr_set_cons_rptr() {
     minitrace::set_reporter(ConsoleReporter, Config::default())
+}
+
+fn mtr_create_def_otlp_exp_cfg() -> mtr_otlp_exp_cfg {
+    unsafe {
+        transmute(opentelemetry_otlp::ExportConfig {
+            endpoint: std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
+                .unwrap_or("localhost:4317".to_string()),
+            protocol: opentelemetry_otlp::Protocol::Grpc,
+            timeout: std::time::Duration::from_secs(
+                opentelemetry_otlp::OTEL_EXPORTER_OTLP_TIMEOUT_DEFAULT,
+            ),
+        })
+    }
+}
+
+fn mtr_create_def_otlp_grpcio_cfg() -> mtr_otlp_grpcio_cfg {
+    unsafe { transmute(opentelemetry_otlp::GrpcioConfig::default()) }
+}
+
+fn mtr_create_otel_rptr(cfg: mtr_otlp_exp_cfg, gcfg: mtr_otlp_grpcio_cfg) -> mtr_otel_rptr {
+    unsafe {
+        transmute(minitrace_opentelemetry::OpenTelemetryReporter::new(
+            opentelemetry_otlp::SpanExporter::new_grpcio(transmute(cfg), transmute(gcfg)),
+            opentelemetry::trace::SpanKind::Server,
+            std::borrow::Cow::Owned(opentelemetry::sdk::Resource::new([
+                opentelemetry::KeyValue::new(
+                    "service.name",
+                    std::env::var("SERVICE_NAME").unwrap_or("unknown".to_string()),
+                ),
+            ])),
+            opentelemetry::InstrumentationLibrary::new(
+                "minitrace-opentelemetry-c",
+                Some(env!("CARGO_PKG_VERSION")),
+                None,
+            ),
+        ))
+    }
 }
 
 fn mtr_flush() {
