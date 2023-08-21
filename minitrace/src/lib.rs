@@ -1,10 +1,11 @@
 // Copyright 2023 Wenbo Zhang. Licensed under Apache-2.0.
 
 use minitrace::{
+    collector::{Config, ConsoleReporter},
     local::LocalCollector,
     prelude::{LocalSpan, Span},
 };
-use std::mem::transmute;
+use std::{mem::transmute, time::Duration};
 
 use self::ffi::*;
 
@@ -34,6 +35,10 @@ mod ffi {
         _padding: [u8; 16],
     }
 
+    struct mtr_coll_cfg {
+        _padding: [u8; 48],
+    }
+
     extern "Rust" {
         fn mtr_create_root_span(name: &'static str, parent: mtr_span_ctx) -> mtr_span;
 
@@ -50,6 +55,16 @@ mod ffi {
         fn mtr_start_loc_coll() -> mtr_loc_coll;
 
         fn mtr_collect_loc_spans(lc: mtr_loc_coll) -> mtr_loc_spans;
+
+        fn mtr_set_max_spans_per_trace(cfg: mtr_coll_cfg, mspt: usize) -> mtr_coll_cfg;
+
+        fn mtr_set_batch_report_interval(cfg: mtr_coll_cfg, bri: u64) -> mtr_coll_cfg;
+
+        fn mtr_set_report_max_spans(cfg: mtr_coll_cfg, brms: usize) -> mtr_coll_cfg;
+
+        fn mtr_set_cons_rptr();
+
+        fn mtr_flush();
     }
 }
 
@@ -83,4 +98,29 @@ fn mtr_start_loc_coll() -> mtr_loc_coll {
 
 fn mtr_collect_loc_spans(lc: mtr_loc_coll) -> mtr_loc_spans {
     unsafe { transmute(transmute::<mtr_loc_coll, LocalCollector>(lc).collect()) }
+}
+
+fn mtr_set_max_spans_per_trace(cfg: mtr_coll_cfg, mspt: usize) -> mtr_coll_cfg {
+    unsafe { transmute(transmute::<mtr_coll_cfg, Config>(cfg).max_spans_per_trace(Some(mspt))) }
+}
+
+fn mtr_set_batch_report_interval(cfg: mtr_coll_cfg, bri: u64) -> mtr_coll_cfg {
+    unsafe {
+        transmute(
+            transmute::<mtr_coll_cfg, Config>(cfg)
+                .batch_report_interval(Duration::from_millis(bri)),
+        )
+    }
+}
+
+fn mtr_set_report_max_spans(cfg: mtr_coll_cfg, brms: usize) -> mtr_coll_cfg {
+    unsafe { transmute(transmute::<mtr_coll_cfg, Config>(cfg).batch_report_max_spans(Some(brms))) }
+}
+
+fn mtr_set_cons_rptr() {
+    minitrace::set_reporter(ConsoleReporter, Config::default())
+}
+
+fn mtr_flush() {
+    minitrace::flush()
 }
