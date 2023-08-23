@@ -13,44 +13,44 @@ extern "C" {
 #endif
 
 typedef struct mtr_span_ctx {
-	uint8_t _padding[24];
-} mtr_span_ctx __attribute__((aligned(8)));
+	uint64_t _padding[3];
+} mtr_span_ctx;
 
 typedef struct mtr_span {
-	uint8_t _padding[128];
-} mtr_span __attribute__((aligned(8)));
+	uint64_t _padding[16];
+} mtr_span;
 
 typedef struct mtr_loc_par_guar {
-	uint8_t _padding[24];
-} mtr_loc_par_guar __attribute__((aligned(8)));
+	uint64_t _padding[3];
+} mtr_loc_par_guar;
 
 typedef struct mtr_loc_span {
-	uint8_t _padding[24];
-} mtr_loc_span __attribute__((aligned(8)));
+	uint64_t _padding[3];
+} mtr_loc_span;
 
 typedef struct mtr_loc_spans {
-	uint8_t _padding[8];
-} mtr_loc_spans __attribute__((aligned(8)));
+	uint64_t _padding[1];
+} mtr_loc_spans;
 
 typedef struct mtr_loc_coll {
-	uint8_t _padding[16];
-} mtr_loc_coll __attribute__((aligned(8)));
+	uint64_t _padding[2];
+} mtr_loc_coll;
 
 typedef struct mtr_coll_cfg {
-	uint8_t _padding[48];
-} mtr_coll_cfg __attribute__((aligned(8)));
+	uint64_t _padding[6];
+} mtr_coll_cfg;
 
 typedef struct mtr_otel_rptr {
-	uint8_t _padding[192];
-} mtr_otel_rptr __attribute__((aligned(8)));
+	uint64_t _padding[24];
+} mtr_otel_rptr;
 
 typedef struct mtr_otlp_exp_cfg {
-	uint8_t _padding[48];
-} mtr_otlp_exp_cfg __attribute__((aligned(8)));
+	uint64_t _padding[6];
+} mtr_otlp_exp_cfg;
 
 typedef struct mtr_otlp_grpcio_cfg {
-	uint8_t _padding[112];
-} mtr_otlp_grpcio_cfg __attribute__((aligned(8)));
+	uint64_t _padding[14];
+} mtr_otlp_grpcio_cfg;
 
 mtr_span_ctx mtr_create_rand_span_ctx();
 

@@ -15,52 +15,52 @@ mod ffi {
 
     #[namespace = "ffi"]
     struct mtr_span_ctx {
-        _padding: [u8; 24],
+        _padding: [u64; 3],
     }
 
     #[namespace = "ffi"]
     struct mtr_span {
-        _padding: [u8; 128],
+        _padding: [u64; 16],
     }
 
     #[namespace = "ffi"]
     struct mtr_loc_par_guar {
-        _padding: [u8; 24],
+        _padding: [u64; 3],
     }
 
     #[namespace = "ffi"]
     struct mtr_loc_span {
-        _padding: [u8; 24],
+        _padding: [u64; 3],
     }
 
     #[namespace = "ffi"]
     struct mtr_loc_spans {
-        _padding: [u8; 8],
+        _padding: [u64; 1],
     }
 
     #[namespace = "ffi"]
     struct mtr_loc_coll {
-        _padding: [u8; 16],
+        _padding: [u64; 2],
     }
 
     #[namespace = "ffi"]
     struct mtr_coll_cfg {
-        _padding: [u8; 48],
+        _padding: [u64; 6],
     }
 
     #[namespace = "ffi"]
     struct mtr_otel_rptr {
-        _padding: [u8; 192],
+        _padding: [u64; 24],
     }
 
     #[namespace = "ffi"]
     struct mtr_otlp_exp_cfg {
-        _padding: [u8; 48],
+        _padding: [u64; 6],
     }
 
     #[namespace = "ffi"]
     struct mtr_otlp_grpcio_cfg {
-        _padding: [u8; 112],
+        _padding: [u64; 14],
     }
 
     #[namespace = "minitrace_glue"]
