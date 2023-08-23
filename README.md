@@ -31,6 +31,6 @@ docker run -d --name jaeger -e COLLECTOR_OTLP_ENABLED=true -e SPAN_STORAGE_TYPE=
 
 cd examples && cmake -S . -B build && cmake --build build
 # run example
-SERVICE_NAME=asynchronous ./build/asynchronous      # capi
+SERVICE_NAME=asynchronous ./build/asynchronous      # c api
 SERVICE_NAME=asynchronous2 ./build/asynchronous2    # c++ api
 ```
