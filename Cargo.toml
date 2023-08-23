@@ -1,25 +1,22 @@
-[workspace]
-resolver = "2"
-members = [
-    "minitrace",
-]
+[package]
+name = "minitrace-c"
+version = "0.5.1"
+authors = [ "Wenbo Zhang <ethercflow.com>" ]
+edition = "2021"
 
-[profile.dev]
-opt-level = 0
-debug = 0
-codegen-units = 4
-lto = false
-incremental = true
-debug-assertions = true
-overflow-checks = false
-rpath = false
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[profile.release]
-opt-level = 3
-debug = true
-codegen-units = 1
-lto = true
-incremental = false
-debug-assertions = false
-overflow-checks = false
-rpath = false
+[lib]
+name = "minitrace_rust"
+crate-type = ["staticlib"]
+
+[dependencies]
+cxx = "1.0.106"
+libc = "0.2"
+minitrace = { version = "0.5.1", features = ["enable"] }
+minitrace-opentelemetry = "0.5.1"
+opentelemetry = { version = "0.19", features = ["trace"] }
+opentelemetry-otlp = { version = "0.12", features = ["trace", "grpc-sys"] }
+
+[build-dependencies]
+cxx-build = "1.0.106"
