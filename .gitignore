@@ -1,6 +1,3 @@
-/target
-/Cargo.lock
-*.o
-/minitrace/examples/asynchronous
-/minitrace/examples/get_started
-/minitrace/examples/synchronous
+target
+Cargo.lock
+build
