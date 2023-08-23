@@ -61,6 +61,23 @@ mtr_span_ctx mtr_create_rand_span_ctx() {
   return std::move(_msc.c);
 }
 
+mtr_span_ctx mtr_create_span_ctx(mtr_span const *span) {
+  union _mtr_span _p = {
+      .c = *span,
+  };
+  union _mtr_span_ctx _msc = {
+      .f = minitrace_glue::mtr_create_span_ctx(_p.f),
+  };
+  return std::move(_msc.c);
+}
+
+mtr_span_ctx mtr_create_span_ctx_loc() {
+  union _mtr_span_ctx _msc = {
+      .f = minitrace_glue::mtr_create_span_ctx_loc(),
+  };
+  return std::move(_msc.c);
+}
+
 mtr_span mtr_create_root_span(const char *name, mtr_span_ctx parent) {
   union _mtr_span _ms = {
       .f = minitrace_glue::mtr_create_root_span(
@@ -84,6 +101,10 @@ mtr_span mtr_create_child_span_enter_loc(const char *name) {
       .f = minitrace_glue::mtr_create_child_span_enter_loc(name),
   };
   return std::move(_ms.c);
+}
+
+void mtr_cancel_span(mtr_span span) {
+  minitrace_glue::mtr_cancel_span(*(ffi::mtr_span *)(&span));
 }
 
 void mtr_destroy_span(mtr_span span) {

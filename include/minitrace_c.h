@@ -74,6 +74,21 @@ mtr_span mtr_create_child_span_enter(const char *name, mtr_span const *parent);
 /* Create a new child span associated with the current local span in the current thread. */
 mtr_span mtr_create_child_span_enter_loc(const char *name);
 
+/*
+ * Dismisses the trace, preventing the reporting of any span records associated
+ * with it.
+ *
+ * This is particularly useful when focusing on the tail latency of a program.
+ * For instant, you can dismiss all traces finishes within the 99th percentile.
+ *
+ * # Note
+ *
+ * This method only dismisses the entire trace when called on the root span.
+ * If called on a non-root span, it will only cancel the reporting of that
+ * specific span.
+ */
+void mtr_cancel_span(mtr_span span);
+
 /* Once destroyed (dropped), the root span automatically submits all associated child spans to the reporter. */
 void mtr_destroy_span(mtr_span span);
 
