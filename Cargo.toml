@@ -8,7 +8,7 @@ edition = "2021"
 
 [lib]
 name = "minitrace_rust"
-crate-type = ["staticlib"]
+crate-type = ["staticlib", "rlib"]
 
 [dependencies]
 cxx = "1.0.106"
