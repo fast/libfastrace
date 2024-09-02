@@ -1,11 +1,10 @@
-# minitrace for C/C++
+# fastrace for C/C++
 
-minitrace for C/C++.
+fastrace for C/C++.
 
 It's built on top of
-[minitrace in Rust](https://github.com/tikv/minitrace-rust) via [cxx](https://github.com/dtolnay/cxx).
+[fastrace in Rust](https://github.com/fast/fastrace) via [cxx](https://github.com/dtolnay/cxx).
 
-This lib is still in the stage of prove-of-concept and under heavy development.
 
 ## Prepare 
 

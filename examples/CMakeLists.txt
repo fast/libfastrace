@@ -4,11 +4,11 @@ set (CMAKE_C_STANDARD 11)
 set (CMAKE_CXX_STANDARD 11)
 
 # using local repository
-find_package(minitrace_c 0.5.1)
+find_package(fastrace_c 0.7.2)
 
 function(add_example target_name source_file)
   add_executable(${target_name} ${source_file})
-  target_link_libraries(${target_name} minitrace_c minitrace_rust)
+  target_link_libraries(${target_name} fastrace_c fastrace_rust)
 endfunction()
 
 set(C_EXAMPLE_SOURCES
