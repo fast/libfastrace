@@ -126,6 +126,19 @@ ftr_loc_par_guar ftr_set_loc_par_to_span(ftr_span const *span) {
   return std::move(_mlpg.c);
 }
 
+void ftr_span_with_property(ftr_span *span, const char *key, const char *val) {
+  fastrace_glue::ftr_span_with_property(
+      *reinterpret_cast<ffi::ftr_span *>(span), key, val);
+}
+
+void ftr_span_with_properties(ftr_span *span, const char **keys,
+                              const char **vals, size_t count) {
+  fastrace_glue::ftr_span_with_properties(
+      *reinterpret_cast<ffi::ftr_span *>(span),
+      rust::Slice<const char *const>(keys, count),
+      rust::Slice<const char *const>(vals, count));
+}
+
 void ftr_destroy_loc_par_guar(ftr_loc_par_guar guard) {
   fastrace_glue::ftr_destroy_loc_par_guar(*(ffi::ftr_loc_par_guar *)(&guard));
 }

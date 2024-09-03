@@ -8,9 +8,13 @@ use fastrace::{
 use fastrace_opentelemetry::OpenTelemetryReporter;
 use once_cell::sync::Lazy;
 use opentelemetry_otlp::WithExportConfig;
-use std::borrow::Cow;
 use std::sync::Mutex;
-use std::{mem::transmute, time::Duration};
+use std::{
+    borrow::Cow,
+    ffi::{c_char, CStr},
+    mem::transmute,
+    time::Duration,
+};
 use tokio::runtime::Runtime;
 
 use self::ffi::*;
@@ -120,6 +124,16 @@ mod ffi {
         /// A local parent is necessary for creating a [`ftr_local_span`] using [`ftr_create_loc_span_enter()`].
         /// If no local parent is set, `ftr_create_loc_span_enter()` will not perform any action.
         fn ftr_set_loc_par_to_span(span: &ftr_span) -> ftr_loc_par_guar;
+
+        /// Add a single property to the `Span` and return the modified `Span`.
+        ///
+        /// A property is an arbitrary key-value pair associated with a span.
+        fn ftr_span_with_property(span: &mut ftr_span, key: &'static str, val: &'static str);
+
+        /// Add multiple properties to the `Span` and return the modified `Span`.
+        fn ftr_span_with_properties(
+            span: &mut ftr_span, keys: &[*const c_char], vals: &[*const c_char],
+        );
 
         fn ftr_destroy_loc_par_guar(guard: ftr_loc_par_guar);
 
@@ -250,6 +264,27 @@ pub fn ftr_destroy_span(span: ftr_span) {
 
 pub fn ftr_set_loc_par_to_span(span: &ftr_span) -> ftr_loc_par_guar {
     unsafe { transmute(transmute::<&ftr_span, &Span>(span).set_local_parent()) }
+}
+
+pub fn ftr_span_with_property(span: &mut ftr_span, key: &'static str, val: &'static str) {
+    let span = unsafe { transmute::<&mut ftr_span, &mut Span>(span) };
+    let owned = std::mem::replace(span, Span::noop());
+    *span = owned.with_property(|| (key, val));
+}
+
+pub fn ftr_span_with_properties(
+    span: &mut ftr_span, keys: &[*const c_char], vals: &[*const c_char],
+) {
+    let span = unsafe { std::mem::transmute::<&mut ftr_span, &mut Span>(span) };
+    let owned = std::mem::replace(span, Span::noop());
+    *span = owned.with_properties(|| {
+        keys.iter().zip(vals.iter()).map(|(&key, &val)| unsafe {
+            (
+                CStr::from_ptr(key).to_string_lossy(),
+                CStr::from_ptr(val).to_string_lossy(),
+            )
+        })
+    });
 }
 
 pub fn ftr_destroy_loc_par_guar(guard: ftr_loc_par_guar) {

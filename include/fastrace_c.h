@@ -111,6 +111,17 @@ void ftr_destroy_span(ftr_span span);
  */
 ftr_loc_par_guar ftr_set_loc_par_to_span(ftr_span const *span);
 
+/*
+ * Add a single property to the `Span` and return the modified `Span`.
+ *
+ * A property is an arbitrary key-value pair associated with a span.
+ */
+void ftr_span_with_property(ftr_span *span, const char *key, const char *val);
+
+/* Add multiple properties to the `Span` and return the modified `Span`. */
+void ftr_span_with_properties(ftr_span *span, const char **keys,
+                              const char **vals, size_t count);
+
 void ftr_destroy_loc_par_guar(ftr_loc_par_guar guard);
 
 /*
