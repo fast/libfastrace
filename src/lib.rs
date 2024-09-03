@@ -94,6 +94,9 @@ mod ffi {
         /// Create a new child span associated with the specified parent span.
         fn ftr_create_child_span_enter(name: &'static str, parent: &ftr_span) -> ftr_span;
 
+        /// Create a new child span associated with multiple parent spans.
+        fn ftr_create_child_span_enter_mul(name: &'static str, parents: &[ftr_span]) -> ftr_span;
+
         /// Create a new child span associated with the current local span in the current thread.
         fn ftr_create_child_span_enter_loc(name: &'static str) -> ftr_span;
 
@@ -223,6 +226,15 @@ pub fn ftr_create_root_span(name: &'static str, parent: ftr_span_ctx) -> ftr_spa
 
 pub fn ftr_create_child_span_enter(name: &'static str, parent: &ftr_span) -> ftr_span {
     unsafe { transmute(Span::enter_with_parent(name, transmute(parent))) }
+}
+
+pub fn ftr_create_child_span_enter_mul(name: &'static str, parents: &[ftr_span]) -> ftr_span {
+    unsafe {
+        transmute(Span::enter_with_parents(
+            name,
+            parents.iter().map(|p| transmute::<&ftr_span, &Span>(p)),
+        ))
+    }
 }
 
 pub fn ftr_create_child_span_enter_loc(name: &'static str) -> ftr_span {

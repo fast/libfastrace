@@ -72,6 +72,10 @@ ftr_span ftr_create_root_span(const char *name, ftr_span_ctx parent);
 /* Create a new child span associated with the specified parent span. */
 ftr_span ftr_create_child_span_enter(const char *name, ftr_span const *parent);
 
+/* Create a new child span associated with multiple parent spans. */
+ftr_span ftr_create_child_span_enter_mul(const char *name,
+                                         ftr_span const *parents, size_t n);
+
 /* Create a new child span associated with the current local span in the current
  * thread. */
 ftr_span ftr_create_child_span_enter_loc(const char *name);

@@ -91,6 +91,16 @@ ftr_span ftr_create_child_span_enter(const char *name, ftr_span const *parent) {
   return std::move(_ms.c);
 }
 
+ftr_span ftr_create_child_span_enter_mul(const char *name,
+                                         ftr_span const *parents, size_t n) {
+  union _ftr_span _ms = {
+      .f = fastrace_glue::ftr_create_child_span_enter_mul(
+          name, rust::Slice<const ffi::ftr_span>(
+                    reinterpret_cast<const ffi::ftr_span *>(parents), n)),
+  };
+  return std::move(_ms.c);
+}
+
 ftr_span ftr_create_child_span_enter_loc(const char *name) {
   union _ftr_span _ms = {
       .f = fastrace_glue::ftr_create_child_span_enter_loc(name),
