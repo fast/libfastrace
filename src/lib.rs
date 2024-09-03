@@ -6,18 +6,17 @@ use fastrace::{
     prelude::{LocalSpan, Span, SpanContext},
 };
 use fastrace_opentelemetry::OpenTelemetryReporter;
+use once_cell::sync::Lazy;
 use opentelemetry_otlp::WithExportConfig;
 use std::borrow::Cow;
-use std::{mem::transmute, time::Duration};
-use once_cell::sync::Lazy;
 use std::sync::Mutex;
+use std::{mem::transmute, time::Duration};
 use tokio::runtime::Runtime;
 
 use self::ffi::*;
 
-static RUNTIME: Lazy<Mutex<Runtime>> = Lazy::new(|| {
-    Mutex::new(Runtime::new().expect("Failed to create Tokio runtime"))
-});
+static RUNTIME: Lazy<Mutex<Runtime>> =
+    Lazy::new(|| Mutex::new(Runtime::new().expect("Failed to create Tokio runtime")));
 
 fn initialize_runtime() {
     Lazy::force(&RUNTIME);
@@ -320,7 +319,10 @@ pub fn ftr_create_otel_rptr(cfg: ftr_otlp_exp_cfg) -> ftr_otel_rptr {
                 .expect("initialize oltp exporter"),
             opentelemetry::trace::SpanKind::Server,
             Cow::Owned(opentelemetry_sdk::Resource::new([
-                opentelemetry::KeyValue::new("service.name", std::env::var("SERVICE_NAME").unwrap_or("unknown".to_string())),
+                opentelemetry::KeyValue::new(
+                    "service.name",
+                    std::env::var("SERVICE_NAME").unwrap_or("unknown".to_string()),
+                ),
             ])),
             opentelemetry::InstrumentationLibrary::builder("fastrace-c")
                 .with_version(env!("CARGO_PKG_VERSION"))
