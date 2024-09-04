@@ -122,6 +122,10 @@ void ftr_span_with_property(ftr_span *span, const char *key, const char *val);
 void ftr_span_with_properties(ftr_span *span, const char **keys,
                               const char **vals, size_t count);
 
+/* Adds an event to the parent span with the given name and properties. */
+void ftr_add_ent_to_par(const char *name, ftr_span *span, const char **keys,
+                        const char **vals, size_t n);
+
 void ftr_destroy_loc_par_guar(ftr_loc_par_guar guard);
 
 /*
@@ -157,6 +161,13 @@ void ftr_push_child_spans_to_cur(ftr_span const *span,
  * thread, and then it will become the new local parent.
  */
 ftr_loc_span ftr_create_loc_span_enter(const char *name);
+
+/*
+ * Adds an event to the current local parent span with the given name and
+ * properties.
+ */
+void ftr_add_ent_to_loc_par(const char *name, const char **keys,
+                            const char **vals, size_t n);
 
 void ftr_destroy_loc_span(ftr_loc_span span);
 

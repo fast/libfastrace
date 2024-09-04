@@ -139,6 +139,14 @@ void ftr_span_with_properties(ftr_span *span, const char **keys,
       rust::Slice<const char *const>(vals, count));
 }
 
+void ftr_add_ent_to_par(const char *name, ftr_span *span, const char **keys,
+                        const char **vals, size_t n) {
+  fastrace_glue::ftr_add_ent_to_par(name,
+                                    *reinterpret_cast<ffi::ftr_span *>(span),
+                                    rust::Slice<const char *const>(keys, n),
+                                    rust::Slice<const char *const>(vals, n));
+}
+
 void ftr_destroy_loc_par_guar(ftr_loc_par_guar guard) {
   fastrace_glue::ftr_destroy_loc_par_guar(*(ffi::ftr_loc_par_guar *)(&guard));
 }
@@ -157,6 +165,13 @@ ftr_loc_span ftr_create_loc_span_enter(const char *name) {
       .f = fastrace_glue::ftr_create_loc_span_enter(name),
   };
   return std::move(_mls.c);
+}
+
+void ftr_add_ent_to_loc_par(const char *name, const char **keys,
+                            const char **vals, size_t n) {
+  fastrace_glue::ftr_add_ent_to_loc_par(
+      name, rust::Slice<const char *const>(keys, n),
+      rust::Slice<const char *const>(vals, n));
 }
 
 void ftr_destroy_loc_span(ftr_loc_span span) {

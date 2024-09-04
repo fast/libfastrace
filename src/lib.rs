@@ -4,6 +4,7 @@ use fastrace::{
     collector::{Config, ConsoleReporter},
     local::{LocalCollector, LocalParentGuard},
     prelude::{LocalSpan, Span, SpanContext},
+    Event,
 };
 use fastrace_opentelemetry::OpenTelemetryReporter;
 use once_cell::sync::Lazy;
@@ -135,6 +136,11 @@ mod ffi {
             span: &mut ftr_span, keys: &[*const c_char], vals: &[*const c_char],
         );
 
+        /// Adds an event to the parent span with the given name and properties.
+        fn ftr_add_ent_to_par(
+            name: &'static str, parent: &ftr_span, keys: &[*const c_char], vals: &[*const c_char],
+        );
+
         fn ftr_destroy_loc_par_guar(guard: ftr_loc_par_guar);
 
         /// Attach a collection of [`ftr_local_span`] instances as child spans to the current span.
@@ -163,6 +169,11 @@ mod ffi {
         /// Create a new child span associated with the current local span in the current thread, and then
         /// it will become the new local parent.
         fn ftr_create_loc_span_enter(name: &'static str) -> ftr_loc_span;
+
+        /// Adds an event to the current local parent span with the given name and properties.
+        fn ftr_add_ent_to_loc_par(
+            name: &'static str, keys: &[*const c_char], vals: &[*const c_char],
+        );
 
         fn ftr_destroy_loc_span(span: ftr_loc_span);
 
@@ -287,6 +298,20 @@ pub fn ftr_span_with_properties(
     });
 }
 
+pub fn ftr_add_ent_to_par(
+    name: &'static str, parent: &ftr_span, keys: &[*const c_char], vals: &[*const c_char],
+) {
+    let parent = unsafe { transmute::<&ftr_span, &Span>(parent) };
+    Event::add_to_parent(name, parent, || {
+        keys.iter().zip(vals.iter()).map(|(&key, &val)| unsafe {
+            (
+                CStr::from_ptr(key).to_string_lossy(),
+                CStr::from_ptr(val).to_string_lossy(),
+            )
+        })
+    });
+}
+
 pub fn ftr_destroy_loc_par_guar(guard: ftr_loc_par_guar) {
     unsafe { drop(transmute::<ftr_loc_par_guar, LocalParentGuard>(guard)) }
 }
@@ -297,6 +322,17 @@ pub fn ftr_push_child_spans_to_cur(span: &ftr_span, local_span: ftr_loc_spans) {
 
 pub fn ftr_create_loc_span_enter(name: &'static str) -> ftr_loc_span {
     unsafe { transmute(LocalSpan::enter_with_local_parent(name)) }
+}
+
+pub fn ftr_add_ent_to_loc_par(name: &'static str, keys: &[*const c_char], vals: &[*const c_char]) {
+    Event::add_to_local_parent(name, || {
+        keys.iter().zip(vals.iter()).map(|(&key, &val)| unsafe {
+            (
+                CStr::from_ptr(key).to_string_lossy(),
+                CStr::from_ptr(val).to_string_lossy(),
+            )
+        })
+    });
 }
 
 pub fn ftr_destroy_loc_span(span: ftr_loc_span) {
