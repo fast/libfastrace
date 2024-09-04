@@ -129,12 +129,10 @@ mod ffi {
         /// Add a single property to the `Span` and return the modified `Span`.
         ///
         /// A property is an arbitrary key-value pair associated with a span.
-        fn ftr_span_with_property(span: &mut ftr_span, key: &'static str, val: &'static str);
+        fn ftr_span_with_prop(span: &mut ftr_span, key: &'static str, val: &'static str);
 
         /// Add multiple properties to the `Span` and return the modified `Span`.
-        fn ftr_span_with_properties(
-            span: &mut ftr_span, keys: &[*const c_char], vals: &[*const c_char],
-        );
+        fn ftr_span_with_props(span: &mut ftr_span, keys: &[*const c_char], vals: &[*const c_char]);
 
         /// Adds an event to the parent span with the given name and properties.
         fn ftr_add_ent_to_par(
@@ -169,6 +167,24 @@ mod ffi {
         /// Create a new child span associated with the current local span in the current thread, and then
         /// it will become the new local parent.
         fn ftr_create_loc_span_enter(name: &'static str) -> ftr_loc_span;
+
+        /// Add a single property to the current local parent. If the local parent is a [`Span`],
+        /// the property will be added to the `Span`.
+        fn ftr_loc_span_add_prop(key: &'static str, val: &'static str);
+
+        /// Add multiple properties to the current local parent. If the local parent is a [`Span`],
+        /// the properties will be added to the `Span`.
+        fn ftr_loc_span_add_props(keys: &[*const c_char], vals: &[*const c_char]);
+
+        /// Add a single property to the `LocalSpan` and return the modified `LocalSpan`.
+        ///
+        /// A property is an arbitrary key-value pair associated with a span.
+        fn ftr_loc_span_with_prop(span: &mut ftr_loc_span, key: &'static str, val: &'static str);
+
+        /// Add multiple properties to the `LocalSpan` and return the modified `LocalSpan`.
+        fn ftr_loc_span_with_props(
+            span: &mut ftr_loc_span, keys: &[*const c_char], vals: &[*const c_char],
+        );
 
         /// Adds an event to the current local parent span with the given name and properties.
         fn ftr_add_ent_to_loc_par(
@@ -277,15 +293,13 @@ pub fn ftr_set_loc_par_to_span(span: &ftr_span) -> ftr_loc_par_guar {
     unsafe { transmute(transmute::<&ftr_span, &Span>(span).set_local_parent()) }
 }
 
-pub fn ftr_span_with_property(span: &mut ftr_span, key: &'static str, val: &'static str) {
+pub fn ftr_span_with_prop(span: &mut ftr_span, key: &'static str, val: &'static str) {
     let span = unsafe { transmute::<&mut ftr_span, &mut Span>(span) };
     let owned = std::mem::replace(span, Span::noop());
     *span = owned.with_property(|| (key, val));
 }
 
-pub fn ftr_span_with_properties(
-    span: &mut ftr_span, keys: &[*const c_char], vals: &[*const c_char],
-) {
+pub fn ftr_span_with_props(span: &mut ftr_span, keys: &[*const c_char], vals: &[*const c_char]) {
     let span = unsafe { std::mem::transmute::<&mut ftr_span, &mut Span>(span) };
     let owned = std::mem::replace(span, Span::noop());
     *span = owned.with_properties(|| {
@@ -322,6 +336,42 @@ pub fn ftr_push_child_spans_to_cur(span: &ftr_span, local_span: ftr_loc_spans) {
 
 pub fn ftr_create_loc_span_enter(name: &'static str) -> ftr_loc_span {
     unsafe { transmute(LocalSpan::enter_with_local_parent(name)) }
+}
+
+pub fn ftr_loc_span_add_prop(key: &'static str, val: &'static str) {
+    LocalSpan::add_property(|| (key, val))
+}
+
+pub fn ftr_loc_span_add_props(keys: &[*const c_char], vals: &[*const c_char]) {
+    LocalSpan::add_properties(|| {
+        keys.iter().zip(vals.iter()).map(|(&key, &val)| unsafe {
+            (
+                CStr::from_ptr(key).to_string_lossy(),
+                CStr::from_ptr(val).to_string_lossy(),
+            )
+        })
+    })
+}
+
+pub fn ftr_loc_span_with_prop(span: &mut ftr_loc_span, key: &'static str, val: &'static str) {
+    let span = unsafe { transmute::<&mut ftr_loc_span, &mut LocalSpan>(span) };
+    let owned = std::mem::take(span);
+    *span = owned.with_property(|| (key, val));
+}
+
+pub fn ftr_loc_span_with_props(
+    span: &mut ftr_loc_span, keys: &[*const c_char], vals: &[*const c_char],
+) {
+    let span = unsafe { std::mem::transmute::<&mut ftr_loc_span, &mut LocalSpan>(span) };
+    let owned = std::mem::take(span);
+    *span = owned.with_properties(|| {
+        keys.iter().zip(vals.iter()).map(|(&key, &val)| unsafe {
+            (
+                CStr::from_ptr(key).to_string_lossy(),
+                CStr::from_ptr(val).to_string_lossy(),
+            )
+        })
+    });
 }
 
 pub fn ftr_add_ent_to_loc_par(name: &'static str, keys: &[*const c_char], vals: &[*const c_char]) {

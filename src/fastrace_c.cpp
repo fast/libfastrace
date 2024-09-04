@@ -2,6 +2,8 @@
 
 #include "fastrace_c.h"
 
+#include <fastrace_c/lib.rs.h>
+
 extern "C" {
 
 union _ftr_span_ctx {
@@ -126,17 +128,16 @@ ftr_loc_par_guar ftr_set_loc_par_to_span(ftr_span const *span) {
   return std::move(_mlpg.c);
 }
 
-void ftr_span_with_property(ftr_span *span, const char *key, const char *val) {
-  fastrace_glue::ftr_span_with_property(
-      *reinterpret_cast<ffi::ftr_span *>(span), key, val);
+void ftr_span_with_prop(ftr_span *span, const char *key, const char *val) {
+  fastrace_glue::ftr_span_with_prop(*reinterpret_cast<ffi::ftr_span *>(span),
+                                    key, val);
 }
 
-void ftr_span_with_properties(ftr_span *span, const char **keys,
-                              const char **vals, size_t count) {
-  fastrace_glue::ftr_span_with_properties(
-      *reinterpret_cast<ffi::ftr_span *>(span),
-      rust::Slice<const char *const>(keys, count),
-      rust::Slice<const char *const>(vals, count));
+void ftr_span_with_props(ftr_span *span, const char **keys, const char **vals,
+                         size_t n) {
+  fastrace_glue::ftr_span_with_props(*reinterpret_cast<ffi::ftr_span *>(span),
+                                     rust::Slice<const char *const>(keys, n),
+                                     rust::Slice<const char *const>(vals, n));
 }
 
 void ftr_add_ent_to_par(const char *name, ftr_span *span, const char **keys,
@@ -165,6 +166,30 @@ ftr_loc_span ftr_create_loc_span_enter(const char *name) {
       .f = fastrace_glue::ftr_create_loc_span_enter(name),
   };
   return std::move(_mls.c);
+}
+
+void ftr_loc_span_add_prop(const char *key, const char *val) {
+  fastrace_glue::ftr_loc_span_add_prop(key, val);
+}
+
+void ftr_loc_span_add_props(const char **keys, const char **vals, size_t n) {
+  fastrace_glue::ftr_loc_span_add_props(
+      rust::Slice<const char *const>(keys, n),
+      rust::Slice<const char *const>(vals, n));
+}
+
+void ftr_loc_span_with_prop(ftr_loc_span *span, const char *key,
+                            const char *val) {
+  fastrace_glue::ftr_loc_span_with_prop(
+      *reinterpret_cast<ffi::ftr_loc_span *>(span), key, val);
+}
+
+void ftr_loc_span_with_props(ftr_loc_span *span, const char **keys,
+                             const char **vals, size_t n) {
+  fastrace_glue::ftr_loc_span_with_props(
+      *reinterpret_cast<ffi::ftr_loc_span *>(span),
+      rust::Slice<const char *const>(keys, n),
+      rust::Slice<const char *const>(vals, n));
 }
 
 void ftr_add_ent_to_loc_par(const char *name, const char **keys,

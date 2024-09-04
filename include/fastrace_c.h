@@ -116,11 +116,11 @@ ftr_loc_par_guar ftr_set_loc_par_to_span(ftr_span const *span);
  *
  * A property is an arbitrary key-value pair associated with a span.
  */
-void ftr_span_with_property(ftr_span *span, const char *key, const char *val);
+void ftr_span_with_prop(ftr_span *span, const char *key, const char *val);
 
 /* Add multiple properties to the `Span` and return the modified `Span`. */
-void ftr_span_with_properties(ftr_span *span, const char **keys,
-                              const char **vals, size_t count);
+void ftr_span_with_props(ftr_span *span, const char **keys, const char **vals,
+                         size_t n);
 
 /* Adds an event to the parent span with the given name and properties. */
 void ftr_add_ent_to_par(const char *name, ftr_span *span, const char **keys,
@@ -161,6 +161,33 @@ void ftr_push_child_spans_to_cur(ftr_span const *span,
  * thread, and then it will become the new local parent.
  */
 ftr_loc_span ftr_create_loc_span_enter(const char *name);
+
+/*
+ * Add a single property to the current local parent.If the local parent is
+ * a[`Span`], the property will be added to the `Span`.
+ */
+void ftr_loc_span_add_prop(const char *key, const char *val);
+
+/*
+ * Add multiple properties to the current local parent. If the local parent is a
+ * [`Span`], the properties will be added to the `Span`.
+ */
+void ftr_loc_span_add_props(const char **keys, const char **val, size_t n);
+
+/*
+ * Add a single property to the `LocalSpan` and return the modified `LocalSpan`.
+ *
+ * A property is an arbitrary key - value pair associated with a span.
+ */
+void ftr_loc_span_with_prop(ftr_loc_span *span, const char *key,
+                            const char *val);
+
+/*
+ * Add multiple properties to the `LocalSpan` and return the modified
+ * `LocalSpan`.
+ */
+void ftr_loc_span_with_props(ftr_loc_span *span, const char **keys,
+                             const char **vals, size_t n);
 
 /*
  * Adds an event to the current local parent span with the given name and
