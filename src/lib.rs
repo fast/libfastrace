@@ -136,7 +136,10 @@ mod ffi {
 
         /// Adds an event to the parent span with the given name and properties.
         fn ftr_add_ent_to_par(
-            name: &'static str, parent: &ftr_span, keys: &[*const c_char], vals: &[*const c_char],
+            name: &'static str,
+            parent: &ftr_span,
+            keys: &[*const c_char],
+            vals: &[*const c_char],
         );
 
         fn ftr_destroy_loc_par_guar(guard: ftr_loc_par_guar);
@@ -183,12 +186,16 @@ mod ffi {
 
         /// Add multiple properties to the `LocalSpan` and return the modified `LocalSpan`.
         fn ftr_loc_span_with_props(
-            span: &mut ftr_loc_span, keys: &[*const c_char], vals: &[*const c_char],
+            span: &mut ftr_loc_span,
+            keys: &[*const c_char],
+            vals: &[*const c_char],
         );
 
         /// Adds an event to the current local parent span with the given name and properties.
         fn ftr_add_ent_to_loc_par(
-            name: &'static str, keys: &[*const c_char], vals: &[*const c_char],
+            name: &'static str,
+            keys: &[*const c_char],
+            vals: &[*const c_char],
         );
 
         fn ftr_destroy_loc_span(span: ftr_loc_span);
@@ -313,7 +320,10 @@ pub fn ftr_span_with_props(span: &mut ftr_span, keys: &[*const c_char], vals: &[
 }
 
 pub fn ftr_add_ent_to_par(
-    name: &'static str, parent: &ftr_span, keys: &[*const c_char], vals: &[*const c_char],
+    name: &'static str,
+    parent: &ftr_span,
+    keys: &[*const c_char],
+    vals: &[*const c_char],
 ) {
     let parent = unsafe { transmute::<&ftr_span, &Span>(parent) };
     Event::add_to_parent(name, parent, || {
@@ -360,7 +370,9 @@ pub fn ftr_loc_span_with_prop(span: &mut ftr_loc_span, key: &'static str, val: &
 }
 
 pub fn ftr_loc_span_with_props(
-    span: &mut ftr_loc_span, keys: &[*const c_char], vals: &[*const c_char],
+    span: &mut ftr_loc_span,
+    keys: &[*const c_char],
+    vals: &[*const c_char],
 ) {
     let span = unsafe { std::mem::transmute::<&mut ftr_loc_span, &mut LocalSpan>(span) };
     let owned = std::mem::take(span);
@@ -445,7 +457,7 @@ pub fn ftr_create_otel_rptr(cfg: ftr_otlp_exp_cfg) -> ftr_otel_rptr {
                     std::env::var("SERVICE_NAME").unwrap_or("unknown".to_string()),
                 ),
             ])),
-            opentelemetry::InstrumentationLibrary::builder("fastrace-c")
+            opentelemetry::InstrumentationLibrary::builder("libfastrace")
                 .with_version(env!("CARGO_PKG_VERSION"))
                 .build(),
         )

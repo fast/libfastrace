@@ -1,7 +1,7 @@
 /* Copyright 2023 Wenbo Zhang. Licensed under Apache-2.0. */
 
-#ifndef __fastrace_C_H
-#define __fastrace_C_H
+#ifndef __LIBFASTRACE_H
+#define __LIBFASTRACE_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -265,4 +265,4 @@ void ftr_flush(void);
 }
 #endif
 
-#endif /* __fastrace_C_H */
+#endif /* __LIBFASTRACE_H */

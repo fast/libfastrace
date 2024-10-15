@@ -1,6 +1,6 @@
 // Copyright 2023 Wenbo Zhang. Licensed under Apache-2.0.
 
-#include <fastrace_c/fastrace_c.h>
+#include <libfastrace/libfastrace.h>
 
 #include <thread>
 

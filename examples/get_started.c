@@ -1,6 +1,6 @@
 // Copyright 2023 Wenbo Zhang. Licensed under Apache-2.0.
 
-#include <fastrace_c/fastrace_c.h>
+#include <libfastrace/libfastrace.h>
 
 static const char* keys[] = {"pk1", "pk2", "pk3", "pk4", "ck1",
                              "ck2", "ck3", "ck4", "ck5", "ck6"};

@@ -1,7 +1,7 @@
 // Copyright 2023 Wenbo Zhang. Licensed under Apache-2.0.
 
 #include <assert.h>
-#include <fastrace_c/fastrace_c.h>
+#include <libfastrace/libfastrace.h>
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdbool.h>
