@@ -1,8 +1,7 @@
 // Copyright 2023 Wenbo Zhang. Licensed under Apache-2.0.
 
-#include "fastrace_c.h"
-
-#include <fastrace_c/lib.rs.h>
+#include "libfastrace.h"
+#include "lib.rs.h"
 
 extern "C" {
 
