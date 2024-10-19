@@ -8,6 +8,10 @@
 #include <stdlib.h>
 
 #ifdef __cplusplus
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "lib.rs.h"
 
 extern "C" {
@@ -263,6 +267,220 @@ void ftr_flush(void);
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef __cplusplus
+namespace fastrace {
+
+// C++ wrapper classes
+
+/**
+ * @brief Represents a span context in the tracing system.
+ *
+ * SpanContext encapsulates the identifying information for a span,
+ * including trace ID, span ID, and sampling decisions.
+ */
+class SpanContext {
+ public:
+  /** @brief Creates a new SpanContext with a random trace ID. */
+  SpanContext();
+
+  /** @brief Creates a SpanContext from an existing ftr_span_ctx. */
+  SpanContext(const ftr_span_ctx &ctx);
+
+  /** @brief Returns the raw ftr_span_ctx representation. */
+  ftr_span_ctx raw() const;
+
+  /** @brief Sets the sampling flag for this SpanContext. */
+  void setSampled(bool sampled);
+
+ private:
+  ftr_span_ctx ctx_;
+};
+
+/**
+ * @brief Represents a span in the tracing system.
+ *
+ * A Span represents a single operation within a trace. It can be
+ * the root of a trace or a child of another span.
+ */
+class Span {
+ public:
+  /** @brief Creates a root span with the given name and parent context. */
+  Span(const char *name, const SpanContext &parent);
+
+  /** @brief Creates a child span with the given name and parent span. */
+  Span(const char *name, const Span &parent);
+
+  /** @brief Creates a child span with the given name, using the current local
+   * span as parent. */
+  explicit Span(const char *name);
+
+  /** @brief Destroys the span, submitting it to the reporter if it's a root
+   * span. */
+  ~Span();
+
+  /** @brief Cancels the span, preventing it from being reported. */
+  void cancel();
+
+  /** @brief Adds a single key-value property to the span. */
+  void addProperty(const std::string &key, const std::string &value);
+
+  /** @brief Adds multiple key-value properties to the span. */
+  void addProperties(
+      const std::vector<std::pair<std::string, std::string>> &properties);
+
+  /** @brief Adds an event with the given name and properties to the span. */
+  void addEvent(
+      const std::string &name,
+      const std::vector<std::pair<std::string, std::string>> &properties);
+
+  /** @brief Returns a pointer to the raw ftr_span representation. */
+  ftr_span *raw();
+
+  /** @brief Returns a const pointer to the raw ftr_span representation. */
+  const ftr_span *raw() const;
+
+ private:
+  std::unique_ptr<ftr_span> span_;
+};
+
+/**
+ * @brief RAII guard for setting and unsetting a local parent span.
+ *
+ * This guard sets the given span as the local parent for the current thread
+ * and automatically unsets it when the guard goes out of scope.
+ */
+class LocalParentGuard {
+ public:
+  /** @brief Sets the given span as the local parent for the current thread. */
+  LocalParentGuard(const Span &span);
+
+  /** @brief Unsets the local parent span. */
+  ~LocalParentGuard();
+
+ private:
+  ftr_loc_par_guar guard_;
+};
+
+/**
+ * @brief Represents a local span in the tracing system.
+ *
+ * A LocalSpan is associated with the current thread and becomes
+ * the new local parent when created.
+ */
+class LocalSpan {
+ public:
+  /** @brief Creates a new local span with the given name. */
+  explicit LocalSpan(const char *name);
+  LocalSpan(const LocalSpan &) = delete;
+  LocalSpan &operator=(const LocalSpan &) = delete;
+
+  /** @brief Move constructor for LocalSpan. */
+  LocalSpan(LocalSpan &&other) noexcept;
+
+  /** @brief Move assignment operator for LocalSpan. */
+  LocalSpan &operator=(LocalSpan &&other) noexcept;
+
+  /** @brief Destroys the local span. */
+  ~LocalSpan();
+
+  /** @brief Adds a single key-value property to the local span. */
+  void addProperty(const std::string &key, const std::string &value);
+
+  /** @brief Adds multiple key-value properties to the local span. */
+  void addProperties(
+      const std::vector<std::pair<std::string, std::string>> &properties);
+
+  /** @brief Adds an event with the given name and properties to the current
+   * local parent span. */
+  void addEvent(
+      const std::string &name,
+      const std::vector<std::pair<std::string, std::string>> &properties);
+
+ private:
+  ftr_loc_span span_;
+};
+
+/**
+ * @brief Configuration for the global collector.
+ *
+ * This class allows setting various parameters for the trace collector.
+ */
+class CollectorConfig {
+ public:
+  /** @brief Creates a default collector configuration. */
+  CollectorConfig();
+
+  /** @brief Sets the maximum number of spans per trace. */
+  void setMaxSpansPerTrace(size_t max);
+
+  /** @brief Sets the interval between batch reports in milliseconds. */
+  void setReportInterval(uint64_t interval);
+
+  /** @brief Returns the raw ftr_coll_cfg representation. */
+  ftr_coll_cfg raw() const;
+
+ private:
+  ftr_coll_cfg cfg_;
+};
+
+/**
+ * @brief Configuration for the OTLP (OpenTelemetry Protocol) exporter.
+ */
+class OTLPExporterConfig {
+ public:
+  /** @brief Creates a default OTLP exporter configuration. */
+  OTLPExporterConfig();
+
+  /** @brief Returns the raw ftr_otlp_exp_cfg representation. */
+  ftr_otlp_exp_cfg raw() const;
+
+ private:
+  ftr_otlp_exp_cfg cfg_;
+};
+
+/**
+ * @brief Reporter for exporting traces using the OpenTelemetry protocol.
+ */
+class OpenTelemetryReporter {
+ public:
+  /** @brief Creates an OpenTelemetry reporter with the given configuration. */
+  OpenTelemetryReporter(const OTLPExporterConfig &config);
+
+  /** @brief Destroys the OpenTelemetry reporter. */
+  ~OpenTelemetryReporter();
+
+  /** @brief Sets the collector configuration for this reporter. */
+  void setReporter(const CollectorConfig &config);
+
+ private:
+  ftr_otel_rptr reporter_;
+};
+
+// Global functions
+
+/** @brief Creates a default OTLP exporter configuration. */
+OTLPExporterConfig createDefaultOTLPExporterConfig();
+
+/** @brief Creates a default collector configuration. */
+CollectorConfig createDefaultCollectorConfig();
+
+/** @brief Creates an OpenTelemetry reporter with the given configuration. */
+OpenTelemetryReporter createOpenTelemetryReporter(
+    const OTLPExporterConfig &config);
+
+/** @brief Sets the OpenTelemetry reporter with the given configuration. */
+void setOpenTelemetryReporter(OpenTelemetryReporter &reporter,
+                              const CollectorConfig &config);
+
+/** @brief Sets the console reporter for debugging purposes. */
+void setConsoleReporter();
+
+/** @brief Flushes all pending span records to the reporter immediately. */
+void flush();
+
+}  // namespace fastrace
 #endif
 
 #endif /* __LIBFASTRACE_H */

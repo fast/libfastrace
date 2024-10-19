@@ -38,37 +38,34 @@ class CQueue {
 };
 
 struct data {
-  void *data;
-  ffi::ftr_span *s;
+  void* data;
+  fastrace::Span* s;
 };
 
-static CQueue<data *> q;
+static CQueue<data*> q;
 
 #define MAX_NUM_PRODUCED 10
 #define MAX_NUM_CONSUMED 5
 
 std::atomic<int> unfinished(2);
 
-void __attribute__((noinline)) baz(void *data) {
-  auto ls = fastrace_glue::ftr_create_loc_span_enter("baz");
+void __attribute__((noinline)) baz(void* data) {
+  fastrace::LocalSpan ls("baz");
   std::this_thread::sleep_for(
       std::chrono::milliseconds((int)(unsigned long long)data * 1));
-  fastrace_glue::ftr_destroy_loc_span(ls);
 }
 
-void consume(const char *arg) {
+void consume(const char* arg) {
   auto i = 0;
 
   while (i < MAX_NUM_CONSUMED) {
     auto n = q.dequeue();
     if (n == nullptr)
       continue;
-    auto s = fastrace_glue::ftr_create_child_span_enter(arg, *n->s);
-    auto g = fastrace_glue::ftr_set_loc_par_to_span(s);
+    fastrace::Span s(arg, *(n->s));
+    fastrace::LocalParentGuard g(s);
     baz(n->data);
     delete n;
-    fastrace_glue::ftr_destroy_span(s);
-    fastrace_glue::ftr_destroy_loc_par_guar(g);
     i++;
   }
 
@@ -76,59 +73,51 @@ void consume(const char *arg) {
 }
 
 void __attribute__((noinline)) wait(void) {
-  auto ls = fastrace_glue::ftr_create_loc_span_enter("wait");
+  fastrace::LocalSpan ls("wait");
   while (1) {
     if (!std::atomic_load(&unfinished))
       break;
     std::this_thread::sleep_for(std::chrono::microseconds(1));
   }
-  fastrace_glue::ftr_destroy_loc_span(ls);
 }
 
 void __attribute__((noinline)) boo(void) {
-  auto s = fastrace_glue::ftr_create_child_span_enter_loc("boo");
+  fastrace::Span s("boo");
 
   for (auto i = 1; i <= MAX_NUM_PRODUCED; i++) {
     auto n = new data;
     assert(n != nullptr);
-    n->data = (void *)(unsigned long long)i;
+    n->data = (void*)(unsigned long long)i;
     n->s = &s;
     q.enqueue(n);
   }
 
   wait();
-
-  fastrace_glue::ftr_destroy_span(s);
 }
 
 void __attribute__((noinline)) bar(void) {
-  auto ls = fastrace_glue::ftr_create_loc_span_enter("bar");
+  fastrace::LocalSpan ls("bar");
   boo();
-  fastrace_glue::ftr_destroy_loc_span(ls);
 }
 
 void __attribute__((noinline)) foo(void) {
-  auto ls = fastrace_glue::ftr_create_loc_span_enter("foo");
+  fastrace::LocalSpan ls("foo");
   bar();
-  fastrace_glue::ftr_destroy_loc_span(ls);
 }
 
 void produce(void) {
-  auto p = fastrace_glue::ftr_create_rand_span_ctx();
-  auto r = fastrace_glue::ftr_create_root_span("root", p);
-  auto g = fastrace_glue::ftr_set_loc_par_to_span(r);
+  fastrace::SpanContext p;
+  fastrace::Span r("root", p);
+  fastrace::LocalParentGuard g(r);
 
   foo();
-
-  fastrace_glue::ftr_destroy_loc_par_guar(g);
-  fastrace_glue::ftr_destroy_span(r);
 }
 
 int main(void) {
-  auto ecfg = fastrace_glue::ftr_create_def_otlp_exp_cfg();
-  auto cfg = fastrace_glue::ftr_create_def_coll_cfg();
-  auto rptr = fastrace_glue::ftr_create_otel_rptr(ecfg);
-  fastrace_glue::ftr_set_otel_rptr(rptr, cfg);
+  auto ecfg = fastrace::createDefaultOTLPExporterConfig();
+  auto cfg = fastrace::createDefaultCollectorConfig();
+  auto rptr = fastrace::createOpenTelemetryReporter(ecfg);
+  fastrace::setOpenTelemetryReporter(rptr, cfg);
 
   std::thread p(produce);
   std::thread c1(consume, "consumer-0");
@@ -138,8 +127,7 @@ int main(void) {
   c1.join();
   c2.join();
 
-  fastrace_glue::ftr_flush();
+  fastrace::flush();
 
-  fastrace_glue::ftr_destroy_otel_rptr(rptr);
   return 0;
 }
