@@ -316,6 +316,18 @@ class Span {
    * span as parent. */
   explicit Span(const char *name);
 
+  /** @brief Move constructor */
+  Span(Span &&other) noexcept;
+
+  /** @brief Move assignment operator */
+  Span &operator=(Span &&other) noexcept;
+
+  /** @brief Copy constructor (deleted to ensure unique ownership) */
+  Span(const Span &) = delete;
+
+  /** @brief Copy assignment operator (deleted to ensure unique ownership) */
+  Span &operator=(const Span &) = delete;
+
   /** @brief Destroys the span, submitting it to the reporter if it's a root
    * span. */
   ~Span();

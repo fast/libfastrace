@@ -3,7 +3,6 @@
 #include "libfastrace.h"
 
 #include <cstring>
-#include <new>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -281,6 +280,15 @@ Span::Span(const char* name, const Span& parent)
 
 Span::Span(const char* name)
     : span_(new ftr_span(ftr_create_child_span_enter_loc(name))) {}
+
+Span::Span(Span&& other) noexcept : span_(std::move(other.span_)) {}
+
+Span& Span::operator=(Span&& other) noexcept {
+  if (this != &other) {
+    span_ = std::move(other.span_);
+  }
+  return *this;
+}
 
 Span::~Span() {
   if (span_) {
