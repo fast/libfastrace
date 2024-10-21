@@ -3,47 +3,47 @@
 #include <libfastrace/libfastrace.h>
 
 #include <array>
+#include <vector>
 
-int main(void) {
-  std::array<const char*, 10> keys = {"pk1", "pk2", "pk3", "pk4", "ck1",
+int main() {
+  std::array<std::string, 10> keys = {"pk1", "pk2", "pk3", "pk4", "ck1",
                                       "ck2", "ck3", "ck4", "ck5", "ck6"};
-  std::array<const char*, 10> vals = {"pv1", "pv2", "pv3", "pv4", "cv1",
+  std::array<std::string, 10> vals = {"pv1", "pv2", "pv3", "pv4", "cv1",
                                       "cv2", "cv3", "cv4", "cv5", "cv6"};
 
-  fastrace_glue::ftr_set_cons_rptr();
-  auto p = fastrace_glue::ftr_create_rand_span_ctx();
-  auto r = fastrace_glue::ftr_create_root_span("root", p);
+  fastrace::setConsoleReporter();
 
-  fastrace_glue::ftr_add_ent_to_par(
-      "parent event", r, rust::Slice<const char* const>(keys.data(), 2),
-      rust::Slice<const char* const>(vals.data(), 2));
+  {
+    fastrace::SpanContext context;
+    fastrace::Span rootSpan("root", context);
 
-  fastrace_glue::ftr_span_with_prop(r, "phello", "pworld");
-  fastrace_glue::ftr_span_with_props(
-      r, rust::Slice<const char* const>(keys.data() + 2, 2),
-      rust::Slice<const char* const>(vals.data() + 2, 2));
+    std::vector<std::pair<std::string, std::string>> parentEventProps = {
+        {keys[0], vals[0]}, {keys[1], vals[1]}};
+    rootSpan.addEvent("parent event", parentEventProps);
 
-  auto g = fastrace_glue::ftr_set_loc_par_to_span(r);
+    rootSpan.addProperty("phello", "pworld");
+    std::vector<std::pair<std::string, std::string>> rootProps = {
+        {keys[2], vals[2]}, {keys[3], vals[3]}};
+    rootSpan.addProperties(rootProps);
 
-  auto ls = fastrace_glue::ftr_create_loc_span_enter("child");
-  fastrace_glue::ftr_add_ent_to_loc_par(
-      "child event", rust::Slice<const char* const>(keys.data() + 4, 2),
-      rust::Slice<const char* const>(vals.data() + 4, 2));
+    fastrace::LocalParentGuard guard(rootSpan);
+    fastrace::LocalSpan childSpan("child");
 
-  fastrace_glue::ftr_loc_span_add_prop("chello", "cworld");
-  fastrace_glue::ftr_loc_span_add_props(
-      rust::Slice<const char* const>(keys.data() + 6, 2),
-      rust::Slice<const char* const>(vals.data() + 6, 2));
+    std::vector<std::pair<std::string, std::string>> childEventProps = {
+        {keys[4], vals[4]}, {keys[5], vals[5]}};
+    childSpan.addEvent("child event", childEventProps);
 
-  fastrace_glue::ftr_loc_span_with_prop(ls, "chello2", "cworld2");
-  fastrace_glue::ftr_loc_span_with_props(
-      ls, rust::Slice<const char* const>(keys.data() + 8, 2),
-      rust::Slice<const char* const>(vals.data() + 8, 2));
+    childSpan.addProperty("chello", "cworld");
+    std::vector<std::pair<std::string, std::string>> childProps1 = {
+        {keys[6], vals[6]}, {keys[7], vals[7]}};
+    childSpan.addProperties(childProps1);
 
-  fastrace_glue::ftr_destroy_loc_span(ls);
-  fastrace_glue::ftr_destroy_loc_par_guar(g);
-  fastrace_glue::ftr_destroy_span(r);
+    childSpan.addProperty("chello2", "cworld2");
+    std::vector<std::pair<std::string, std::string>> childProps2 = {
+        {keys[8], vals[8]}, {keys[9], vals[9]}};
+    childSpan.addProperties(childProps2);
+  }
 
-  fastrace_glue::ftr_flush();
+  fastrace::flush();
   return 0;
 }

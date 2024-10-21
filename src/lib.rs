@@ -1,5 +1,13 @@
 // Copyright 2023 Wenbo Zhang. Licensed under Apache-2.0.
 
+use std::{
+    borrow::Cow,
+    ffi::{c_char, CStr},
+    mem::transmute,
+    sync::Mutex,
+    time::Duration,
+};
+
 use fastrace::{
     collector::{Config, ConsoleReporter},
     local::{LocalCollector, LocalParentGuard},
@@ -9,13 +17,6 @@ use fastrace::{
 use fastrace_opentelemetry::OpenTelemetryReporter;
 use once_cell::sync::Lazy;
 use opentelemetry_otlp::WithExportConfig;
-use std::sync::Mutex;
-use std::{
-    borrow::Cow,
-    ffi::{c_char, CStr},
-    mem::transmute,
-    time::Duration,
-};
 use tokio::runtime::Runtime;
 
 use self::ffi::*;
@@ -306,17 +307,23 @@ pub fn ftr_span_with_prop(span: &mut ftr_span, key: &'static str, val: &'static 
     *span = owned.with_property(|| (key, val));
 }
 
+fn convert_c_str_arrays<'a>(
+    keys: &'a [*const c_char],
+    vals: &'a [*const c_char],
+) -> impl Iterator<Item = (Cow<'static, str>, Cow<'static, str>)> + 'a {
+    keys.iter().zip(vals.iter()).map(|(&key, &val)| unsafe {
+        (
+            CStr::from_ptr(key).to_string_lossy().into_owned().into(),
+            CStr::from_ptr(val).to_string_lossy().into_owned().into(),
+        )
+    })
+}
+
 pub fn ftr_span_with_props(span: &mut ftr_span, keys: &[*const c_char], vals: &[*const c_char]) {
-    let span = unsafe { std::mem::transmute::<&mut ftr_span, &mut Span>(span) };
-    let owned = std::mem::replace(span, Span::noop());
-    *span = owned.with_properties(|| {
-        keys.iter().zip(vals.iter()).map(|(&key, &val)| unsafe {
-            (
-                CStr::from_ptr(key).to_string_lossy(),
-                CStr::from_ptr(val).to_string_lossy(),
-            )
-        })
-    });
+    let span = unsafe { transmute::<&mut ftr_span, &mut Span>(span) };
+    let props = convert_c_str_arrays(keys, vals);
+    let owned = std::mem::take(span);
+    *span = owned.with_properties(move || props);
 }
 
 pub fn ftr_add_ent_to_par(
@@ -375,26 +382,14 @@ pub fn ftr_loc_span_with_props(
     vals: &[*const c_char],
 ) {
     let span = unsafe { std::mem::transmute::<&mut ftr_loc_span, &mut LocalSpan>(span) };
+    let props = convert_c_str_arrays(keys, vals);
     let owned = std::mem::take(span);
-    *span = owned.with_properties(|| {
-        keys.iter().zip(vals.iter()).map(|(&key, &val)| unsafe {
-            (
-                CStr::from_ptr(key).to_string_lossy(),
-                CStr::from_ptr(val).to_string_lossy(),
-            )
-        })
-    });
+    *span = owned.with_properties(move || props);
 }
 
 pub fn ftr_add_ent_to_loc_par(name: &'static str, keys: &[*const c_char], vals: &[*const c_char]) {
-    Event::add_to_local_parent(name, || {
-        keys.iter().zip(vals.iter()).map(|(&key, &val)| unsafe {
-            (
-                CStr::from_ptr(key).to_string_lossy(),
-                CStr::from_ptr(val).to_string_lossy(),
-            )
-        })
-    });
+    let props = convert_c_str_arrays(keys, vals);
+    Event::add_to_local_parent(name, move || props);
 }
 
 pub fn ftr_destroy_loc_span(span: ftr_loc_span) {
