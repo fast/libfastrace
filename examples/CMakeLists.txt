@@ -1,5 +1,6 @@
+cmake_minimum_required(VERSION 3.10)
+cmake_policy(SET CMP0048 NEW)
 project(Example)
-cmake_minimum_required(VERSION 3.5)
 set (CMAKE_C_STANDARD 11)
 set (CMAKE_CXX_STANDARD 11)
 
