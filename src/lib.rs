@@ -91,6 +91,9 @@ mod ffi {
         /// Sets the `sampled` flag of the `SpanContext`.
         fn ftr_span_ctx_set_sampled(ctx: ftr_span_ctx, sampled: bool) -> ftr_span_ctx;
 
+        /// Create a place-holder span that never starts recording.
+        fn ftr_create_noop_span() -> ftr_span;
+
         /// Create a new trace and return its root span.
         ///
         /// Once destroyed (dropped), the root span automatically submits all associated child spans to the reporter.
@@ -266,6 +269,10 @@ pub fn ftr_create_span_ctx_loc() -> ftr_span_ctx {
 
 pub fn ftr_span_ctx_set_sampled(ctx: ftr_span_ctx, sampled: bool) -> ftr_span_ctx {
     unsafe { transmute(transmute::<ftr_span_ctx, SpanContext>(ctx).sampled(sampled)) }
+}
+
+pub fn ftr_create_noop_span() -> ftr_span {
+    unsafe { transmute(Span::noop()) }
 }
 
 pub fn ftr_create_root_span(name: &'static str, parent: ftr_span_ctx) -> ftr_span {

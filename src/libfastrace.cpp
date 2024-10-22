@@ -11,22 +11,6 @@
 
 namespace {
 
-template <typename T>
-class RustTypeWrapper {
-  typename std::aligned_storage<sizeof(T), alignof(T)>::type storage;
-  T* ptr;
-
- public:
-  template <typename... Args>
-  RustTypeWrapper(Args&&... args)
-      : ptr(new(&storage) T(std::forward<Args>(args)...)) {}
-
-  ~RustTypeWrapper() { ptr->~T(); }
-
-  T& get() { return *ptr; }
-  const T& get() const { return *ptr; }
-};
-
 template <typename CType, typename RustType, typename... Args>
 CType call_rust_function(RustType (*rust_func)(Args...),
                          typename std::decay<Args>::type... args) {
@@ -35,10 +19,8 @@ CType call_rust_function(RustType (*rust_func)(Args...),
   static_assert(alignof(CType) == alignof(RustType),
                 "CType must have the same alignment as RustType");
 
-  RustTypeWrapper<RustType> wrapper(
-      rust_func(std::forward<decltype(args)>(args)...));
-
-  return *reinterpret_cast<CType*>(&wrapper.get());
+  RustType result = rust_func(std::forward<decltype(args)>(args)...);
+  return *reinterpret_cast<CType*>(&result);
 }
 
 template <typename Type, typename... Args>
@@ -137,12 +119,10 @@ void ftr_span_with_props(ftr_span* span, const char** keys, const char** vals,
 
 void ftr_add_ent_to_par(const char* name, ftr_span* span, const char** keys,
                         const char** vals, size_t n) {
-  std::vector<const char*> rust_keys(keys, keys + n);
-  std::vector<const char*> rust_vals(vals, vals + n);
-  fastrace_glue::ftr_add_ent_to_par(
-      rust::Str(name), *reinterpret_cast<ffi::ftr_span*>(span),
-      rust::Slice<const char* const>(rust_keys.data(), n),
-      rust::Slice<const char* const>(rust_vals.data(), n));
+  fastrace_glue::ftr_add_ent_to_par(rust::Str(name),
+                                    *reinterpret_cast<ffi::ftr_span*>(span),
+                                    rust::Slice<const char* const>(keys, n),
+                                    rust::Slice<const char* const>(vals, n));
 }
 
 void ftr_destroy_loc_par_guar(ftr_loc_par_guar guard) {
@@ -167,11 +147,9 @@ void ftr_loc_span_add_prop(const char* key, const char* val) {
 }
 
 void ftr_loc_span_add_props(const char** keys, const char** vals, size_t n) {
-  std::vector<const char*> rust_keys(keys, keys + n);
-  std::vector<const char*> rust_vals(vals, vals + n);
   fastrace_glue::ftr_loc_span_add_props(
-      rust::Slice<const char* const>(rust_keys.data(), n),
-      rust::Slice<const char* const>(rust_vals.data(), n));
+      rust::Slice<const char* const>(keys, n),
+      rust::Slice<const char* const>(vals, n));
 }
 
 void ftr_loc_span_with_prop(ftr_loc_span* span, const char* key,
@@ -183,21 +161,17 @@ void ftr_loc_span_with_prop(ftr_loc_span* span, const char* key,
 
 void ftr_loc_span_with_props(ftr_loc_span* span, const char** keys,
                              const char** vals, size_t n) {
-  std::vector<const char*> rust_keys(keys, keys + n);
-  std::vector<const char*> rust_vals(vals, vals + n);
   fastrace_glue::ftr_loc_span_with_props(
       *reinterpret_cast<ffi::ftr_loc_span*>(span),
-      rust::Slice<const char* const>(rust_keys.data(), n),
-      rust::Slice<const char* const>(rust_vals.data(), n));
+      rust::Slice<const char* const>(keys, n),
+      rust::Slice<const char* const>(vals, n));
 }
 
 void ftr_add_ent_to_loc_par(const char* name, const char** keys,
                             const char** vals, size_t n) {
-  std::vector<const char*> rust_keys(keys, keys + n);
-  std::vector<const char*> rust_vals(vals, vals + n);
   fastrace_glue::ftr_add_ent_to_loc_par(
-      rust::Str(name), rust::Slice<const char* const>(rust_keys.data(), n),
-      rust::Slice<const char* const>(rust_vals.data(), n));
+      rust::Str(name), rust::Slice<const char* const>(keys, n),
+      rust::Slice<const char* const>(vals, n));
 }
 
 void ftr_destroy_loc_span(ftr_loc_span span) {
@@ -273,72 +247,62 @@ void SpanContext::setSampled(bool sampled) {
 }
 
 Span::Span(const char* name, const SpanContext& parent)
-    : span_(new ftr_span(ftr_create_root_span(name, parent.raw()))) {}
+    : span_(ftr_create_root_span(name, parent.raw())) {}
 
 Span::Span(const char* name, const Span& parent)
-    : span_(new ftr_span(ftr_create_child_span_enter(name, parent.raw()))) {}
+    : span_(ftr_create_child_span_enter(name, parent.raw())) {}
 
-Span::Span(const char* name)
-    : span_(new ftr_span(ftr_create_child_span_enter_loc(name))) {}
+Span::Span(const char* name) : span_(ftr_create_child_span_enter_loc(name)) {}
 
-Span::Span(Span&& other) noexcept : span_(std::move(other.span_)) {}
+Span::Span(Span&& other) noexcept : span_(other.span_) {
+  other.span_ =
+      call_rust_function<ftr_span>(&fastrace_glue::ftr_create_noop_span);
+}
 
 Span& Span::operator=(Span&& other) noexcept {
   if (this != &other) {
-    span_ = std::move(other.span_);
+    ftr_destroy_span(span_);
+    span_ = other.span_;
+    other.span_ =
+        call_rust_function<ftr_span>(&fastrace_glue::ftr_create_noop_span);
   }
   return *this;
 }
 
-Span::~Span() {
-  if (span_) {
-    ftr_destroy_span(*span_);
-  }
-}
+Span::~Span() { ftr_destroy_span(span_); }
 
-void Span::cancel() {
-  if (span_) {
-    ftr_cancel_span(*span_);
-  }
-}
+void Span::cancel() { ftr_cancel_span(span_); }
 
-void Span::addProperty(const std::string& key, const std::string& value) {
-  if (span_) {
-    ftr_span_with_prop(span_.get(), key.c_str(), value.c_str());
-  }
+void Span::addProperty(const char* key, const char* value) {
+  ftr_span_with_prop(&span_, key, value);
 }
 
 void Span::addProperties(
-    const std::vector<std::pair<std::string, std::string> >& properties) {
-  if (span_ && !properties.empty()) {
-    std::vector<const char*> keys;
-    std::vector<const char*> values;
-    for (size_t i = 0; i < properties.size(); ++i) {
-      keys.push_back(properties[i].first.c_str());
-      values.push_back(properties[i].second.c_str());
-    }
-    ftr_span_with_props(span_.get(), &keys[0], &values[0], properties.size());
+    const std::vector<std::pair<const char*, const char*>>& properties) {
+  if (!properties.empty()) {
+    fastrace_glue::ftr_span_with_props(
+        *reinterpret_cast<ffi::ftr_span*>(&span_),
+        rust::Slice<const char* const>(&properties[0].first, properties.size()),
+        rust::Slice<const char* const>(&properties[0].second,
+                                       properties.size()));
   }
 }
 
 void Span::addEvent(
-    const std::string& name,
-    const std::vector<std::pair<std::string, std::string> >& properties) {
-  if (span_ && !properties.empty()) {
-    std::vector<const char*> keys;
-    std::vector<const char*> values;
-    for (size_t i = 0; i < properties.size(); ++i) {
-      keys.push_back(properties[i].first.c_str());
-      values.push_back(properties[i].second.c_str());
-    }
-    ftr_add_ent_to_par(name.c_str(), span_.get(), &keys[0], &values[0],
-                       properties.size());
+    const char* name,
+    const std::vector<std::pair<const char*, const char*>>& properties) {
+  if (!properties.empty()) {
+    fastrace_glue::ftr_add_ent_to_par(
+        rust::Str(name), *reinterpret_cast<ffi::ftr_span*>(&span_),
+        rust::Slice<const char* const>(&properties[0].first, properties.size()),
+        rust::Slice<const char* const>(&properties[0].second,
+                                       properties.size()));
   }
 }
 
-ftr_span* Span::raw() { return span_.get(); }
+ftr_span* Span::raw() { return &span_; }
 
-const ftr_span* Span::raw() const { return span_.get(); }
+const ftr_span* Span::raw() const { return &span_; }
 
 LocalParentGuard::LocalParentGuard(const Span& span)
     : guard_(ftr_set_loc_par_to_span(span.raw())) {}
@@ -362,35 +326,44 @@ LocalSpan& LocalSpan::operator=(LocalSpan&& other) noexcept {
 }
 LocalSpan::~LocalSpan() { ftr_destroy_loc_span(span_); }
 
-void LocalSpan::addProperty(const std::string& key, const std::string& value) {
-  ftr_loc_span_with_prop(&span_, key.c_str(), value.c_str());
+void LocalSpan::addProperty(const char* key, const char* value) {
+  ftr_loc_span_add_prop(key, value);
 }
 
 void LocalSpan::addProperties(
-    const std::vector<std::pair<std::string, std::string> >& properties) {
+    const std::vector<std::pair<const char*, const char*>>& properties) {
   if (!properties.empty()) {
-    std::vector<const char*> keys;
-    std::vector<const char*> values;
-    for (size_t i = 0; i < properties.size(); ++i) {
-      keys.push_back(properties[i].first.c_str());
-      values.push_back(properties[i].second.c_str());
-    }
-    ftr_loc_span_with_props(&span_, &keys[0], &values[0], properties.size());
+    fastrace_glue::ftr_loc_span_add_props(
+        rust::Slice<const char* const>(&properties[0].first, properties.size()),
+        rust::Slice<const char* const>(&properties[0].second,
+                                       properties.size()));
   }
 }
 
 void LocalSpan::addEvent(
-    const std::string& name,
-    const std::vector<std::pair<std::string, std::string> >& properties) {
+    const char* name,
+    const std::vector<std::pair<const char*, const char*>>& properties) {
   if (!properties.empty()) {
-    std::vector<const char*> keys;
-    std::vector<const char*> values;
-    for (size_t i = 0; i < properties.size(); ++i) {
-      keys.push_back(properties[i].first.c_str());
-      values.push_back(properties[i].second.c_str());
-    }
-    ftr_add_ent_to_loc_par(name.c_str(), &keys[0], &values[0],
-                           properties.size());
+    fastrace_glue::ftr_add_ent_to_loc_par(
+        rust::Str(name),
+        rust::Slice<const char* const>(&properties[0].first, properties.size()),
+        rust::Slice<const char* const>(&properties[0].second,
+                                       properties.size()));
+  }
+}
+
+void LocalSpan::withProperty(const char* key, const char* value) {
+  ftr_loc_span_with_prop(&span_, key, value);
+}
+
+void LocalSpan::withProperties(
+    const std::vector<std::pair<const char*, const char*>>& properties) {
+  if (!properties.empty()) {
+    fastrace_glue::ftr_loc_span_with_props(
+        *reinterpret_cast<ffi::ftr_loc_span*>(&span_),
+        rust::Slice<const char* const>(&properties[0].first, properties.size()),
+        rust::Slice<const char* const>(&properties[0].second,
+                                       properties.size()));
   }
 }
 
