@@ -8,8 +8,6 @@
 #include <stdlib.h>
 
 #ifdef __cplusplus
-#include <memory>
-#include <string>
 #include <vector>
 
 #include "lib.rs.h"
@@ -64,6 +62,9 @@ ftr_span_ctx ftr_create_span_ctx_loc(void);
 
 /* Sets the `sampled` flag of the `SpanContext`. */
 ftr_span_ctx ftr_span_ctx_set_sampled(ftr_span_ctx ctx, bool sampled);
+
+/* Create a place-holder span that never starts recording. */
+ftr_span ftr_creat_noop_span();
 
 /*
  * Create a new trace and return its root span.
@@ -336,16 +337,16 @@ class Span {
   void cancel();
 
   /** @brief Adds a single key-value property to the span. */
-  void addProperty(const std::string &key, const std::string &value);
+  void addProperty(const char *key, const char *value);
 
   /** @brief Adds multiple key-value properties to the span. */
   void addProperties(
-      const std::vector<std::pair<std::string, std::string>> &properties);
+      const std::vector<std::pair<const char *, const char *>> &properties);
 
   /** @brief Adds an event with the given name and properties to the span. */
   void addEvent(
-      const std::string &name,
-      const std::vector<std::pair<std::string, std::string>> &properties);
+      const char *name,
+      const std::vector<std::pair<const char *, const char *>> &properties);
 
   /** @brief Returns a pointer to the raw ftr_span representation. */
   ftr_span *raw();
@@ -354,7 +355,7 @@ class Span {
   const ftr_span *raw() const;
 
  private:
-  std::unique_ptr<ftr_span> span_;
+  ftr_span span_;
 };
 
 /**
@@ -385,30 +386,45 @@ class LocalSpan {
  public:
   /** @brief Creates a new local span with the given name. */
   explicit LocalSpan(const char *name);
+
+  /** @brief Copy constructor (deleted to ensure unique ownership) */
   LocalSpan(const LocalSpan &) = delete;
+
+  /** @brief Copy assignment operator (deleted to ensure unique ownership) */
   LocalSpan &operator=(const LocalSpan &) = delete;
 
-  /** @brief Move constructor for LocalSpan. */
+  /** @brief Move constructor */
   LocalSpan(LocalSpan &&other) noexcept;
 
-  /** @brief Move assignment operator for LocalSpan. */
+  /** @brief Move assignment operator */
   LocalSpan &operator=(LocalSpan &&other) noexcept;
 
   /** @brief Destroys the local span. */
   ~LocalSpan();
 
-  /** @brief Adds a single key-value property to the local span. */
-  void addProperty(const std::string &key, const std::string &value);
+  /** @brief Adds a single key-value property to the current local parent span.
+   */
+  void addProperty(const char *key, const char *value);
 
-  /** @brief Adds multiple key-value properties to the local span. */
+  /** @brief Adds multiple key-value properties to the current local parent
+   * span. */
   void addProperties(
-      const std::vector<std::pair<std::string, std::string>> &properties);
+      const std::vector<std::pair<const char *, const char *>> &properties);
+
+  /** @brief Adds a single key-value property to the local span and returns the
+   * modified local span. */
+  void withProperty(const char *key, const char *value);
+
+  /** @brief Adds multiple key-value properties to the local span and returns
+   * the modified local span. */
+  void withProperties(
+      const std::vector<std::pair<const char *, const char *>> &properties);
 
   /** @brief Adds an event with the given name and properties to the current
    * local parent span. */
   void addEvent(
-      const std::string &name,
-      const std::vector<std::pair<std::string, std::string>> &properties);
+      const char *name,
+      const std::vector<std::pair<const char *, const char *>> &properties);
 
  private:
   ftr_loc_span span_;
