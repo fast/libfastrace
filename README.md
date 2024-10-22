@@ -5,6 +5,10 @@ fastrace for C/C++.
 It's built on top of
 [fastrace in Rust](https://github.com/fast/fastrace) via [cxx](https://github.com/dtolnay/cxx).
 
+## Requirements
+
+- C++11 or later
+- Rust environment
 
 ## Prepare 
 
@@ -20,6 +24,14 @@ curl https://sh.rustup.rs -sSf | sh
 cmake -S . -B build && cmake --build build
 ## install to /usr/local
 sudo cmake --install build
+```
+
+## Uninstall
+
+To uninstall the library, use the following command:
+
+```bash
+sudo cmake --build build --target uninstall
 ```
 
 ## Run example
