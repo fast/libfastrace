@@ -2,6 +2,7 @@
 
 #include "libfastrace.h"
 
+#include <cstdint>
 #include <cstring>
 #include <type_traits>
 #include <utility>
@@ -92,6 +93,11 @@ ftr_span ftr_create_child_span_enter_loc(const char* name) {
 
 void ftr_cancel_span(ftr_span span) {
   fastrace_glue::ftr_cancel_span(*reinterpret_cast<ffi::ftr_span*>(&span));
+}
+
+uint64_t ftr_span_elapsed(const ftr_span* span) {
+  return fastrace_glue::ftr_span_elapsed(
+      *reinterpret_cast<const ffi::ftr_span*>(span));
 }
 
 void ftr_destroy_span(ftr_span span) {
@@ -273,6 +279,8 @@ Span::~Span() { ftr_destroy_span(span_); }
 
 void Span::cancel() { ftr_cancel_span(span_); }
 
+uint64_t Span::elapsed() const { return ftr_span_elapsed(&span_); }
+
 void Span::addProperty(const char* key, const char* value) {
   ftr_span_with_prop(&span_, key, value);
 }
@@ -414,4 +422,5 @@ void setOpenTelemetryReporter(OpenTelemetryReporter& reporter,
 void setConsoleReporter() { ftr_set_cons_rptr(); }
 
 void flush() { ftr_flush(); }
+
 }  // namespace fastrace
