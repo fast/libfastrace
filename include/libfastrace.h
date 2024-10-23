@@ -354,6 +354,12 @@ class Span {
   /** @brief Returns a const pointer to the raw ftr_span representation. */
   const ftr_span *raw() const;
 
+  /**
+   * @brief Returns the elapsed time since the span was created in nanoseconds.
+   * @return Elapsed time in nanoseconds, or 0 if the span is not active.
+   */
+  uint64_t elapsed() const;
+
  private:
   ftr_span span_;
 };

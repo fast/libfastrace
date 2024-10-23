@@ -119,6 +119,10 @@ mod ffi {
         /// If called on a non-root span, it will only cancel the reporting of that specific span.
         fn ftr_cancel_span(span: ftr_span);
 
+
+        /// Returns the elapsed time since the span was created.
+        fn ftr_span_elapsed(span: &ftr_span) -> u64;
+
         /// Once destroyed (dropped), the root span automatically submits all associated child spans to the reporter.
         fn ftr_destroy_span(span: ftr_span);
 
@@ -298,6 +302,11 @@ pub fn ftr_create_child_span_enter_loc(name: &'static str) -> ftr_span {
 
 pub fn ftr_cancel_span(span: ftr_span) {
     unsafe { transmute::<ftr_span, Span>(span).cancel() }
+}
+
+pub fn ftr_span_elapsed(span: &ftr_span) -> u64 {
+    let span = unsafe { transmute::<&ftr_span, &Span>(span) };
+    span.elapsed().map(|d| d.as_nanos() as u64).unwrap_or(0)
 }
 
 pub fn ftr_destroy_span(span: ftr_span) {
@@ -486,3 +495,4 @@ pub fn ftr_set_otel_rptr(rptr: ftr_otel_rptr, cfg: ftr_coll_cfg) {
 pub fn ftr_flush() {
     fastrace::flush()
 }
+
