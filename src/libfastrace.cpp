@@ -273,6 +273,10 @@ Span& Span::operator=(Span&& other) noexcept {
   return *this;
 }
 
+Span::Span() {
+  span_ = call_rust_function<ftr_span>(&fastrace_glue::ftr_create_noop_span);
+}
+
 Span::~Span() { ftr_destroy_span(span_); }
 
 void Span::cancel() { ftr_cancel_span(span_); }
