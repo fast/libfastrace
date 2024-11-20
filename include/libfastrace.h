@@ -329,6 +329,9 @@ class Span {
   /** @brief Copy assignment operator (deleted to ensure unique ownership) */
   Span &operator=(const Span &) = delete;
 
+  /** @brief Creates a new noop Span. */
+  Span();
+
   /** @brief Destroys the span, submitting it to the reporter if it's a root
    * span. */
   ~Span();
