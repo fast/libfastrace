@@ -1,0 +1,58 @@
+if(NOT EXISTS "@CMAKE_BINARY_DIR@/install_manifest.txt")
+  message(FATAL_ERROR "Cannot find install manifest: @CMAKE_BINARY_DIR@/install_manifest.txt")
+endif()
+
+file(READ "@CMAKE_BINARY_DIR@/install_manifest.txt" files)
+string(REGEX REPLACE "\n" ";" files "${files}")
+foreach(file ${files})
+  message(STATUS "Uninstalling $ENV{DESTDIR}${file}")
+  if(IS_SYMLINK "$ENV{DESTDIR}${file}" OR EXISTS "$ENV{DESTDIR}${file}")
+    execute_process(
+      COMMAND "@CMAKE_COMMAND@" -E remove "$ENV{DESTDIR}${file}"
+      OUTPUT_VARIABLE rm_out
+      RESULT_VARIABLE rm_retval
+    )
+    if(NOT "${rm_retval}" STREQUAL 0)
+      message(FATAL_ERROR "Problem when removing $ENV{DESTDIR}${file}")
+    endif()
+  else()
+    message(STATUS "File $ENV{DESTDIR}${file} does not exist.")
+  endif()
+endforeach()
+
+set(PACKAGE_DIRS
+  "@CMAKE_INSTALL_PREFIX@/lib/cmake/libfastrace"
+  "@CMAKE_INSTALL_PREFIX@/lib/cmake"
+  "@CMAKE_INSTALL_PREFIX@/lib"
+)
+
+function(check_and_remove_if_empty dir)
+  if(EXISTS "${dir}")
+    file(GLOB dir_contents "${dir}/*")
+    list(LENGTH dir_contents count)
+    if(count EQUAL 0)
+      if("${dir}" STREQUAL "@CMAKE_INSTALL_PREFIX@/lib")
+        if(NOT EXISTS "${dir}/.." OR NOT IS_DIRECTORY "${dir}/..")
+          message(STATUS "Skipping system lib directory: ${dir}")
+          return()
+        endif()
+      endif()
+
+      execute_process(
+        COMMAND "@CMAKE_COMMAND@" -E remove_directory "${dir}"
+        OUTPUT_VARIABLE rm_out
+        RESULT_VARIABLE rm_retval
+      )
+      if("${rm_retval}" STREQUAL 0)
+        message(STATUS "Removed empty directory: ${dir}")
+      endif()
+    else()
+      message(STATUS "Directory not empty, skipping: ${dir}")
+    endif()
+  endif()
+endfunction()
+
+message(STATUS "Removing empty package directories...")
+foreach(dir ${PACKAGE_DIRS})
+  check_and_remove_if_empty("${dir}")
+endforeach()

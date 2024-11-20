@@ -8,8 +8,6 @@
 #include <utility>
 #include <vector>
 
-#include "lib.rs.h"
-
 namespace {
 
 template <typename CType, typename RustType, typename... Args>
