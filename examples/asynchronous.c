@@ -137,6 +137,7 @@ void __attribute__((noinline)) foo(void) {
 }
 
 void *produce(void *arg) {
+  (void)arg;
   ftr_span_ctx p = ftr_create_rand_span_ctx();
   ftr_span r = ftr_create_root_span("root", p);
   ftr_loc_par_guar g = ftr_set_loc_par_to_span(&r);
