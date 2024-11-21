@@ -21,8 +21,15 @@ use tokio::runtime::Runtime;
 
 use self::ffi::*;
 
-static RUNTIME: Lazy<Mutex<Runtime>> =
-    Lazy::new(|| Mutex::new(Runtime::new().expect("Failed to create Tokio runtime")));
+static RUNTIME: Lazy<Mutex<Runtime>> = Lazy::new(|| {
+    Mutex::new(
+        tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(2)
+            .enable_all()
+            .build()
+            .expect("Failed to create Tokio runtime"),
+    )
+});
 
 fn initialize_runtime() {
     Lazy::force(&RUNTIME);
@@ -118,7 +125,6 @@ mod ffi {
         /// This method only dismisses the entire trace when called on the root span.
         /// If called on a non-root span, it will only cancel the reporting of that specific span.
         fn ftr_cancel_span(span: ftr_span);
-
 
         /// Returns the elapsed time since the span was created.
         fn ftr_span_elapsed(span: &ftr_span) -> u64;
@@ -495,4 +501,3 @@ pub fn ftr_set_otel_rptr(rptr: ftr_otel_rptr, cfg: ftr_coll_cfg) {
 pub fn ftr_flush() {
     fastrace::flush()
 }
-
