@@ -64,7 +64,7 @@ ftr_span_ctx ftr_create_span_ctx_loc(void);
 ftr_span_ctx ftr_span_ctx_set_sampled(ftr_span_ctx ctx, bool sampled);
 
 /* Create a place-holder span that never starts recording. */
-ftr_span ftr_creat_noop_span();
+ftr_span ftr_create_noop_span();
 
 /*
  * Create a new trace and return its root span.
